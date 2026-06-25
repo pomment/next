@@ -1,0 +1,521 @@
+{
+  "v": 12,
+  "name": "Pomment Next API",
+  "folders": [
+    {
+      "v": 12,
+      "name": "Health",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "Health check",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/health",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Admin health check",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/admin/health",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "robots.txt",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/robots.txt",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null,
+      "preRequestScript": "",
+      "testScript": ""
+    },
+    {
+      "v": 12,
+      "name": "Public Thread",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "Get thread meta by ID",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/public/thread/meta/<<threadId>>",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Get thread meta by URL",
+          "method": "POST",
+          "endpoint": "<<baseUrl>>/public/thread/meta/byUrl",
+          "params": [],
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"url\": \"https://example.com/hello-world\"\n}"
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Get thread meta by URLs",
+          "method": "POST",
+          "endpoint": "<<baseUrl>>/public/thread/meta/byUrls",
+          "params": [],
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "body": "[\n  \"https://example.com/hello-world\",\n  \"https://example.com/another-page\"\n]"
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null,
+      "preRequestScript": "",
+      "testScript": ""
+    },
+    {
+      "v": 12,
+      "name": "Public Posts",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "List public posts by thread ID",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/public/posts/<<threadId>>",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "List public posts by URL",
+          "method": "POST",
+          "endpoint": "<<baseUrl>>/public/posts/byUrl",
+          "params": [],
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"url\": \"https://example.com/hello-world\"\n}"
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Add user post",
+          "method": "POST",
+          "endpoint": "<<baseUrl>>/public/posts/add",
+          "params": [],
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"id\": \"thread-hello-world\",\n  \"url\": \"https://example.com/hello-world\",\n  \"title\": \"Hello World\",\n  \"parent\": \"\",\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"website\": \"https://alice.example.com\",\n  \"content\": \"This is a test comment.\",\n  \"receiveEmail\": false\n}"
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null,
+      "preRequestScript": "",
+      "testScript": ""
+    },
+    {
+      "v": 12,
+      "name": "Admin Thread",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "List all threads",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/admin/thread/list",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Get thread with all posts",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/admin/thread/<<threadId>>",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Refresh all thread meta",
+          "method": "POST",
+          "endpoint": "<<baseUrl>>/admin/thread/refresh",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Get thread meta (admin)",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/admin/thread/meta/<<threadId>>",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Update thread meta",
+          "method": "PUT",
+          "endpoint": "<<baseUrl>>/admin/thread/meta",
+          "params": [],
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"title\": \"Updated Title\",\n  \"firstPostAt\": 0,\n  \"latestPostAt\": 0,\n  \"amount\": 0,\n  \"id\": \"<<threadId>>\",\n  \"locked\": false,\n  \"url\": \"https://example.com/hello-world\"\n}"
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null,
+      "preRequestScript": "",
+      "testScript": ""
+    },
+    {
+      "v": 12,
+      "name": "Admin Posts",
+      "folders": [],
+      "requests": [
+        {
+          "v": "17",
+          "name": "Get single post",
+          "method": "GET",
+          "endpoint": "<<baseUrl>>/admin/posts/<<threadId>>/<<postId>>",
+          "params": [],
+          "headers": [],
+          "body": {
+            "contentType": null,
+            "body": null
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Add admin post",
+          "method": "POST",
+          "endpoint": "<<baseUrl>>/admin/posts/<<threadId>>",
+          "params": [],
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"name\": \"Admin\",\n  \"email\": \"admin@example.com\",\n  \"parent\": \"\",\n  \"content\": \"Official reply from admin.\"\n}"
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
+          "name": "Edit post",
+          "method": "PUT",
+          "endpoint": "<<baseUrl>>/admin/posts/<<threadId>>",
+          "params": [],
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"id\": \"<<postId>>\",\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"emailHashed\": \"\",\n  \"website\": \"\",\n  \"parent\": \"\",\n  \"content\": \"Edited comment content.\",\n  \"hidden\": false,\n  \"byAdmin\": false,\n  \"receiveEmail\": false,\n  \"editKey\": \"\",\n  \"createdAt\": 0,\n  \"updatedAt\": 0,\n  \"origContent\": \"Edited comment content.\",\n  \"avatar\": \"\",\n  \"rating\": 0\n}"
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        }
+      ],
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "headers": [],
+      "variables": [],
+      "description": null,
+      "preRequestScript": "",
+      "testScript": ""
+    }
+  ],
+  "requests": [],
+  "auth": {
+    "authType": "inherit",
+    "authActive": true
+  },
+  "headers": [],
+  "variables": [
+    {
+      "key": "baseUrl",
+      "initialValue": "http://127.0.0.1:8080",
+      "currentValue": "http://127.0.0.1:8080",
+      "secret": false
+    },
+    {
+      "key": "threadId",
+      "initialValue": "thread-hello-world",
+      "currentValue": "thread-hello-world",
+      "secret": false
+    },
+    {
+      "key": "postId",
+      "initialValue": "00000000-0000-0000-0000-000000000000",
+      "currentValue": "00000000-0000-0000-0000-000000000000",
+      "secret": false
+    }
+  ],
+  "description": "Hoppscotch native collection for the Pomment Next MVP. Admin routes are unauthenticated in this MVP.",
+  "preRequestScript": "",
+  "testScript": ""
+}
