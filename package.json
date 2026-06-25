@@ -1,0 +1,15 @@
+{
+  "name": "pomment-next",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/entry-bun/server.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "typescript": "^5.9.3"
+  }
+}
