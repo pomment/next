@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bun run src/entry-bun/server.ts",
     "test": "bun test",
+    "test:smoke": "bun run e2e/smoke.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
