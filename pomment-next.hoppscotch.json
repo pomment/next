@@ -242,9 +242,9 @@
               "description": ""
             }
           ],
-          "body": {
+           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"id\": \"thread-hello-world\",\n  \"url\": \"https://example.com/hello-world\",\n  \"title\": \"Hello World\",\n  \"parent\": \"\",\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"website\": \"https://alice.example.com\",\n  \"content\": \"This is a test comment.\",\n  \"receiveEmail\": false\n}"
+            "body": "{\n  \"url\": \"https://example.com/hello-world\",\n  \"title\": \"Hello World\",\n  \"parent\": 0,\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"website\": \"https://alice.example.com\",\n  \"content\": \"This is a test comment.\",\n  \"receiveEmail\": false\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -358,6 +358,34 @@
         },
         {
           "v": "17",
+          "name": "Import legacy thread",
+          "method": "POST",
+          "endpoint": "<<baseUrl>>/admin/thread/import",
+          "params": [],
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "active": true,
+              "description": ""
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "body": "{\n  \"thread\": {\n    \"url\": \"https://example.com/hello-world\",\n    \"title\": \"Hello World\",\n    \"firstPostAt\": 1609459200000,\n    \"latestPostAt\": 1609545600000,\n    \"amount\": 2,\n    \"locked\": false\n  },\n  \"posts\": [\n    {\n      \"name\": \"Alice\",\n      \"email\": \"alice@example.com\",\n      \"emailHashed\": \"c160f8cc69a4f0bf2b0362752353d060\",\n      \"content\": \"First comment\",\n      \"createdAt\": 1609459200000,\n      \"updatedAt\": 1609459200000\n    },\n    {\n      \"name\": \"Bob\",\n      \"email\": \"bob@example.com\",\n      \"emailHashed\": \"f5d1278e8109edd94e1e4197e04873b9\",\n      \"parent\": 1,\n      \"content\": \"Reply to Alice\",\n      \"createdAt\": 1609545600000,\n      \"updatedAt\": 1609545600000\n    }\n  ]\n}"
+          },
+          "auth": {
+            "authType": "inherit",
+            "authActive": true
+          },
+          "preRequestScript": "",
+          "testScript": "",
+          "requestVariables": [],
+          "responses": {},
+          "description": null
+        },
+        {
+          "v": "17",
           "name": "Update thread meta",
           "method": "PUT",
           "endpoint": "<<baseUrl>>/admin/thread/meta",
@@ -370,9 +398,9 @@
               "description": ""
             }
           ],
-          "body": {
+           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"title\": \"Updated Title\",\n  \"firstPostAt\": 0,\n  \"latestPostAt\": 0,\n  \"amount\": 0,\n  \"id\": \"<<threadId>>\",\n  \"locked\": false,\n  \"url\": \"https://example.com/hello-world\"\n}"
+            "body": "{\n  \"title\": \"Updated Title\",\n  \"firstPostAt\": 0,\n  \"latestPostAt\": 0,\n  \"amount\": 0,\n  \"id\": <<threadId>>,\n  \"locked\": false,\n  \"url\": \"https://example.com/hello-world\"\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -435,9 +463,9 @@
               "description": ""
             }
           ],
-          "body": {
+           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"name\": \"Admin\",\n  \"email\": \"admin@example.com\",\n  \"parent\": \"\",\n  \"content\": \"Official reply from admin.\"\n}"
+            "body": "{\n  \"name\": \"Admin\",\n  \"email\": \"admin@example.com\",\n  \"parent\": 0,\n  \"content\": \"Official reply from admin.\"\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -463,9 +491,9 @@
               "description": ""
             }
           ],
-          "body": {
+           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"id\": \"<<postId>>\",\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"emailHashed\": \"\",\n  \"website\": \"\",\n  \"parent\": \"\",\n  \"content\": \"Edited comment content.\",\n  \"hidden\": false,\n  \"byAdmin\": false,\n  \"receiveEmail\": false,\n  \"editKey\": \"\",\n  \"createdAt\": 0,\n  \"updatedAt\": 0,\n  \"origContent\": \"Edited comment content.\",\n  \"avatar\": \"\",\n  \"rating\": 0\n}"
+            "body": "{\n  \"id\": <<postId>>,\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"emailHashed\": \"c160f8cc69a4f0bf2b0362752353d060\",\n  \"website\": \"\",\n  \"parent\": 0,\n  \"content\": \"Edited comment content.\",\n  \"hidden\": false,\n  \"byAdmin\": false,\n  \"receiveEmail\": false,\n  \"editKey\": \"abc123def456\",\n  \"createdAt\": 1700000000000,\n  \"updatedAt\": 1700000000000,\n  \"origContent\": \"Edited comment content.\",\n  \"avatar\": \"\",\n  \"rating\": 0\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -502,16 +530,16 @@
       "currentValue": "http://127.0.0.1:8080",
       "secret": false
     },
-    {
+     {
       "key": "threadId",
-      "initialValue": "thread-hello-world",
-      "currentValue": "thread-hello-world",
+      "initialValue": "1",
+      "currentValue": "1",
       "secret": false
     },
     {
       "key": "postId",
-      "initialValue": "00000000-0000-0000-0000-000000000000",
-      "currentValue": "00000000-0000-0000-0000-000000000000",
+      "initialValue": "1",
+      "currentValue": "1",
       "secret": false
     }
   ],

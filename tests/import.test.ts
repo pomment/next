@@ -81,12 +81,13 @@ function makeThread(): Thread {
 function makePosts(): LegacyPostInput[] {
   return [
     {
+      id: 'legacy-post-001',
       name: 'Alice',
       email: 'alice@example.com',
       emailHashed: 'c160f8cc69a4f0bf2b0362752353d060',
       website: 'https://alice.example.com',
       avatar: '',
-      parent: 0,
+      parent: '',
       content: 'First comment',
       origContent: 'First comment',
       hidden: false,
@@ -98,12 +99,13 @@ function makePosts(): LegacyPostInput[] {
       updatedAt: 1609459200000,
     },
     {
+      id: 'legacy-post-002',
       name: 'Bob',
       email: 'bob@example.com',
       emailHashed: 'f5d1278e8109edd94e1e4197e04873b9',
       website: '',
       avatar: '',
-      parent: 1,
+      parent: 'legacy-post-001',
       content: 'Reply to Alice',
       origContent: 'Reply to Alice',
       hidden: false,
@@ -165,6 +167,7 @@ describe('importThread', () => {
 
     const newPosts: LegacyPostInput[] = [
       {
+        id: 'legacy-post-003',
         name: 'Charlie',
         email: 'charlie@example.com',
         emailHashed: 'ed8ce15386c87c3daa2f7b3f3695b232',
@@ -190,6 +193,7 @@ describe('importThread', () => {
     const core = new PommentCore({ storage: new MemoryStorage() });
 
     const postWithoutOrig: LegacyPostInput = {
+      id: 'legacy-post-004',
       name: 'Legacy',
       email: 'legacy@example.com',
       emailHashed: 'd41d8cd98f00b204e9800998ecf8427e',
@@ -265,7 +269,7 @@ describe('importThread', () => {
     await expect(
       core.importThread({
         thread: makeThread(),
-        posts: [{ name: '', email: '', emailHashed: '', content: 'ok', createdAt: 0, updatedAt: 0 }],
+        posts: [{ id: '', name: '', email: '', emailHashed: '', content: 'ok', createdAt: 0, updatedAt: 0 }],
       }),
     ).rejects.toThrow('missing required post fields');
   });

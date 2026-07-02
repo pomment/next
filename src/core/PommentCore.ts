@@ -246,8 +246,42 @@ export class PommentCore {
         threadId = await storage.createThread({ ...input.thread, id: 0 });
       }
 
+      const idMapping = new Map<string, number>();
       for (const legacy of input.posts) {
-        await storage.appendPost(threadId, this.legacyPostToPost(legacy));
+        const post: Post = {
+          id: 0,
+          name: legacy.name,
+          email: legacy.email,
+          emailHashed: legacy.emailHashed,
+          website: legacy.website ?? '',
+          parent: 0,
+          content: legacy.content,
+          hidden: legacy.hidden ?? false,
+          byAdmin: legacy.byAdmin ?? false,
+          receiveEmail: legacy.receiveEmail ?? false,
+          editKey: legacy.editKey ?? '',
+          createdAt: legacy.createdAt,
+          updatedAt: legacy.updatedAt,
+          origContent: legacy.origContent ?? legacy.content,
+          avatar: legacy.avatar ?? '',
+          rating: legacy.rating ?? 0,
+        };
+        const newId = await storage.appendPost(threadId, post);
+        idMapping.set(legacy.id, newId);
+      }
+
+      for (const legacy of input.posts) {
+        if (legacy.parent) {
+          const newParentId = idMapping.get(legacy.parent);
+          if (newParentId !== undefined) {
+            const newPostId = idMapping.get(legacy.id)!;
+            await storage.updatePost(threadId, {
+              ...this.legacyPostToPost(legacy),
+              id: newPostId,
+              parent: newParentId,
+            });
+          }
+        }
       }
 
       await storage.updateThread({ ...input.thread, id: threadId });
@@ -264,7 +298,7 @@ export class PommentCore {
       email: input.email,
       emailHashed: input.emailHashed,
       website: input.website ?? '',
-      parent: input.parent ?? 0,
+      parent: 0,
       content: input.content,
       hidden: input.hidden ?? false,
       byAdmin: input.byAdmin ?? false,
@@ -286,7 +320,7 @@ export class PommentCore {
       throw new ValidationError('posts must be an array');
     }
     for (const post of input.posts) {
-      if (!post.emailHashed || !post.content) {
+      if (!post.id || !post.emailHashed || !post.content) {
         throw new ValidationError('missing required post fields');
       }
     }

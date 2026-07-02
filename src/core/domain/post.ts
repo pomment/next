@@ -65,12 +65,13 @@ export interface PostListResult {
 }
 
 export interface LegacyPostInput {
+  id: string;
   name: string;
   email: string;
   emailHashed: string;
   website?: string;
   avatar?: string;
-  parent?: number;
+  parent?: string;
   content: string;
   origContent?: string;
   hidden?: boolean;
