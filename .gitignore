@@ -3,3 +3,9 @@ node_modules
 *.db-shm
 *.db-wal
 .env
+
+# todo: remove after personal use done
+apps-20260311.7z
+apps
+
+.DS_Store
