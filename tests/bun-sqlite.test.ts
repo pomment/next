@@ -51,7 +51,6 @@ describe('BunSqliteStorage', () => {
     const core = new PommentCore({ storage });
 
     await core.createUserPost({
-      id: 'thread-1',
       url: 'https://example.com/admin',
       title: 'Admin Post',
       name: 'User',
@@ -59,8 +58,10 @@ describe('BunSqliteStorage', () => {
       content: 'first',
     });
 
+    const thread = await core.getThreadMetaByUrl('https://example.com/admin');
+
     const adminPost = await core.createAdminPost({
-      threadId: 'thread-1',
+      threadId: thread.id,
       name: 'Admin',
       email: 'admin@example.com',
       content: 'reply',
@@ -69,7 +70,7 @@ describe('BunSqliteStorage', () => {
     expect(adminPost.byAdmin).toBe(true);
     expect(adminPost.hidden).toBe(false);
 
-    const result = await core.listPublicPostsById('thread-1');
+    const result = await core.listPublicPostsById(thread.id);
     expect(result.meta.amount).toBe(2);
     expect(result.post.map(post => post.content)).toEqual(['first', 'reply']);
     storage.close();

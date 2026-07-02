@@ -1,12 +1,12 @@
 import type { Thread } from './thread';
 
 export interface Post {
-  id: string;
+  id: number;
   name: string;
   email: string;
   emailHashed: string;
   website: string;
-  parent: string;
+  parent: number;
   content: string;
   hidden: boolean;
   byAdmin: boolean;
@@ -20,11 +20,11 @@ export interface Post {
 }
 
 export interface PublicPost {
-  id: string;
+  id: number;
   name: string;
   emailHashed: string;
   website: string;
-  parent: string;
+  parent: number;
   content: string;
   hidden: boolean;
   byAdmin: boolean;
@@ -34,10 +34,9 @@ export interface PublicPost {
 }
 
 export interface CreateUserPostInput {
-  id?: string;
   url: string;
   title: string;
-  parent?: string;
+  parent?: number;
   name: string;
   email: string;
   website?: string;
@@ -47,15 +46,15 @@ export interface CreateUserPostInput {
 }
 
 export interface CreateAdminPostInput {
-  threadId: string;
+  threadId: number;
   name: string;
   email: string;
-  parent?: string;
+  parent?: number;
   content: string;
 }
 
 export interface EditPostInput {
-  threadId: string;
+  threadId: number;
   post: Post;
   alterEditTime?: boolean;
 }
@@ -63,4 +62,32 @@ export interface EditPostInput {
 export interface PostListResult {
   meta: Thread;
   post: PublicPost[];
+}
+
+export interface LegacyPostInput {
+  name: string;
+  email: string;
+  emailHashed: string;
+  website?: string;
+  avatar?: string;
+  parent?: number;
+  content: string;
+  origContent?: string;
+  hidden?: boolean;
+  rating?: number;
+  byAdmin?: boolean;
+  receiveEmail?: boolean;
+  editKey?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ImportThreadInput {
+  thread: Thread;
+  posts: LegacyPostInput[];
+}
+
+export interface ImportThreadResult {
+  thread: Thread;
+  postCount: number;
 }

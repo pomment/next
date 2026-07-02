@@ -54,8 +54,8 @@ async function main() {
       assert(json.data === null, 'expected data to be null');
     });
 
-    let threadId = '';
-    let postId = '';
+    let threadId = 0;
+    let postId = 0;
 
     await scenario('POST /public/posts/add creates thread and post', async () => {
       const res = await handler(
@@ -76,7 +76,7 @@ async function main() {
       assert(json.data.emailHashed.length > 0, 'expected emailHashed to be set');
       assert(json.data.origContent === 'hello smoke', 'expected origContent to be set');
       assert(typeof json.data.editKey === 'string' && json.data.editKey.length > 0, 'expected editKey');
-      threadId = json.data.id ? json.data.id : '';
+      threadId = json.data.id;
       postId = json.data.id;
     });
 
@@ -101,7 +101,7 @@ async function main() {
       const listJson = (await listRes.json()) as { code: number; data: any };
       assert(listJson.code === 200, `expected code 200, got ${listJson.code}`);
       threadId = listJson.data.meta.id;
-      assert(threadId.length > 0, 'expected threadId to be set');
+      assert(threadId > 0, 'expected threadId to be set');
     });
 
     await scenario('GET /public/posts/:id hides private fields and counts correctly', async () => {

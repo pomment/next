@@ -2,15 +2,17 @@ import { describe, expect, test } from 'bun:test';
 import { PommentCore, type Post, type StoragePort, type Thread } from '../src/core';
 
 class MemoryStorage implements StoragePort {
-  private threads = new Map<string, Thread>();
-  private urlToThreadId = new Map<string, string>();
-  private posts = new Map<string, Post[]>();
+  private threads = new Map<number, Thread>();
+  private urlToThreadId = new Map<string, number>();
+  private posts = new Map<number, Post[]>();
+  private nextThreadId = 1;
+  private nextPostId = 1;
 
   async transaction<T>(fn: (storage: StoragePort) => Promise<T>): Promise<T> {
     return fn(this);
   }
 
-  async getThreadById(id: string): Promise<Thread | null> {
+  async getThreadById(id: number): Promise<Thread | null> {
     return this.threads.get(id) ?? null;
   }
 
@@ -19,10 +21,12 @@ class MemoryStorage implements StoragePort {
     return id ? this.threads.get(id) ?? null : null;
   }
 
-  async createThread(thread: Thread): Promise<void> {
-    this.threads.set(thread.id, thread);
-    this.urlToThreadId.set(thread.url, thread.id);
-    this.posts.set(thread.id, []);
+  async createThread(thread: Thread): Promise<number> {
+    const id = this.nextThreadId++;
+    this.threads.set(id, { ...thread, id });
+    this.urlToThreadId.set(thread.url, id);
+    this.posts.set(id, []);
+    return id;
   }
 
   async updateThread(thread: Thread): Promise<void> {
@@ -34,23 +38,30 @@ class MemoryStorage implements StoragePort {
     return Array.from(this.threads.values());
   }
 
-  async listPosts(threadId: string): Promise<Post[]> {
+  async listPosts(threadId: number): Promise<Post[]> {
     return this.posts.get(threadId) ?? [];
   }
 
-  async getPost(threadId: string, postId: string): Promise<Post | null> {
+  async getPost(threadId: number, postId: number): Promise<Post | null> {
     return (this.posts.get(threadId) ?? []).find(post => post.id === postId) ?? null;
   }
 
-  async appendPost(threadId: string, post: Post): Promise<void> {
-    this.posts.set(threadId, [...(this.posts.get(threadId) ?? []), post]);
+  async appendPost(threadId: number, post: Post): Promise<number> {
+    const id = this.nextPostId++;
+    const stored = { ...post, id };
+    this.posts.set(threadId, [...(this.posts.get(threadId) ?? []), stored]);
+    return id;
   }
 
-  async updatePost(threadId: string, post: Post): Promise<void> {
+  async updatePost(threadId: number, post: Post): Promise<void> {
     this.posts.set(
       threadId,
       (this.posts.get(threadId) ?? []).map(item => (item.id === post.id ? post : item)),
     );
+  }
+
+  async deletePostsByThread(threadId: number): Promise<void> {
+    this.posts.set(threadId, []);
   }
 }
 
@@ -71,6 +82,7 @@ describe('PommentCore', () => {
     expect(post.website).toBe('');
     expect(post.emailHashed).toBe('c160f8cc69a4f0bf2b0362752353d060');
     expect(post.origContent).toBe('hello');
+    expect(post.id).toBeGreaterThan(0);
 
     const result = await core.listPublicPostsByUrl('https://example.com/post');
     expect(result.meta.amount).toBe(1);

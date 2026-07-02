@@ -3,6 +3,9 @@ import type {
   CreateAdminPostInput,
   CreateUserPostInput,
   EditPostInput,
+  ImportThreadInput,
+  ImportThreadResult,
+  LegacyPostInput,
   Post,
   PostListResult,
 } from './domain/post';
@@ -30,7 +33,7 @@ export class PommentCore {
     this.config = { ...defaultCoreConfig, ...deps.config };
   }
 
-  async getThreadMetaById(id: string): Promise<Thread> {
+  async getThreadMetaById(id: number): Promise<Thread> {
     const thread = await this.deps.storage.getThreadById(id);
     return thread ?? this.emptyThread({ id });
   }
@@ -48,7 +51,7 @@ export class PommentCore {
     return out;
   }
 
-  async listPublicPostsById(threadId: string): Promise<PostListResult> {
+  async listPublicPostsById(threadId: number): Promise<PostListResult> {
     const thread = await this.deps.storage.getThreadById(threadId);
     if (!thread) {
       return {
@@ -76,11 +79,11 @@ export class PommentCore {
     return this.listPublicPostsById(thread.id);
   }
 
-  async listAllPostsById(threadId: string): Promise<Post[]> {
+  async listAllPostsById(threadId: number): Promise<Post[]> {
     return this.deps.storage.listPosts(threadId);
   }
 
-  async getPost(threadId: string, postId: string): Promise<Post> {
+  async getPost(threadId: number, postId: number): Promise<Post> {
     const post = await this.deps.storage.getPost(threadId, postId);
     if (!post) {
       throw new NotFoundError('unable to find post');
@@ -96,7 +99,7 @@ export class PommentCore {
       let thread = await storage.getThreadByUrl(input.url);
       if (!thread) {
         thread = {
-          id: input.id || crypto.randomUUID(),
+          id: 0,
           url: input.url,
           title: input.title,
           firstPostAt: 0,
@@ -104,17 +107,17 @@ export class PommentCore {
           amount: 0,
           locked: false,
         };
-        await storage.createThread(thread);
+        thread.id = await storage.createThread(thread);
       }
 
       const now = Date.now();
       const post: Post = {
-        id: crypto.randomUUID(),
+        id: 0,
         name: input.name,
         email: input.email,
         emailHashed: await hashEmail(input.email, this.config.avatarHash),
         website: sanitizeWebsite(input.website),
-        parent: input.parent ?? '',
+        parent: input.parent ?? 0,
         content: input.content,
         hidden: this.config.moderationInitiallyHidden,
         byAdmin: false,
@@ -127,7 +130,7 @@ export class PommentCore {
         rating: 0,
       };
 
-      await storage.appendPost(thread.id, post);
+      post.id = await storage.appendPost(thread.id, post);
       createdThread = await this.refreshThreadMetaWithStorage(storage, thread.id);
       return post;
     });
@@ -147,12 +150,12 @@ export class PommentCore {
 
       const now = Date.now();
       const post: Post = {
-        id: crypto.randomUUID(),
+        id: 0,
         name: input.name,
         email: input.email,
         emailHashed: await hashEmail(input.email, this.config.avatarHash),
         website: '',
-        parent: input.parent ?? '',
+        parent: input.parent ?? 0,
         content: input.content,
         hidden: false,
         byAdmin: true,
@@ -165,7 +168,7 @@ export class PommentCore {
         rating: 0,
       };
 
-      await storage.appendPost(thread.id, post);
+      post.id = await storage.appendPost(thread.id, post);
       await this.refreshThreadMetaWithStorage(storage, thread.id);
       return post;
     });
@@ -189,7 +192,7 @@ export class PommentCore {
     });
   }
 
-  async refreshThreadMeta(threadId: string): Promise<Thread> {
+  async refreshThreadMeta(threadId: number): Promise<Thread> {
     return this.deps.storage.transaction(storage => this.refreshThreadMetaWithStorage(storage, threadId));
   }
 
@@ -209,7 +212,7 @@ export class PommentCore {
     return thread;
   }
 
-  private async refreshThreadMetaWithStorage(storage: StoragePort, threadId: string): Promise<Thread> {
+  private async refreshThreadMetaWithStorage(storage: StoragePort, threadId: number): Promise<Thread> {
     const thread = await storage.getThreadById(threadId);
     if (!thread) {
       throw new NotFoundError('thread not found');
@@ -229,9 +232,69 @@ export class PommentCore {
     return updated;
   }
 
+  async importThread(input: ImportThreadInput): Promise<ImportThreadResult> {
+    this.validateImportInput(input);
+
+    const { threadId, postCount } = await this.deps.storage.transaction(async storage => {
+      const existing = await storage.getThreadByUrl(input.thread.url);
+      let threadId: number;
+      if (existing) {
+        threadId = existing.id;
+        await storage.updateThread({ ...input.thread, id: threadId });
+        await storage.deletePostsByThread(threadId);
+      } else {
+        threadId = await storage.createThread({ ...input.thread, id: 0 });
+      }
+
+      for (const legacy of input.posts) {
+        await storage.appendPost(threadId, this.legacyPostToPost(legacy));
+      }
+
+      await storage.updateThread({ ...input.thread, id: threadId });
+      return { threadId, postCount: input.posts.length };
+    });
+
+    return { thread: { ...input.thread, id: threadId }, postCount };
+  }
+
+  private legacyPostToPost(input: LegacyPostInput): Post {
+    return {
+      id: 0,
+      name: input.name,
+      email: input.email,
+      emailHashed: input.emailHashed,
+      website: input.website ?? '',
+      parent: input.parent ?? 0,
+      content: input.content,
+      hidden: input.hidden ?? false,
+      byAdmin: input.byAdmin ?? false,
+      receiveEmail: input.receiveEmail ?? false,
+      editKey: input.editKey ?? '',
+      createdAt: input.createdAt,
+      updatedAt: input.updatedAt,
+      origContent: input.origContent ?? input.content,
+      avatar: input.avatar ?? '',
+      rating: input.rating ?? 0,
+    };
+  }
+
+  private validateImportInput(input: ImportThreadInput): void {
+    if (!input.thread.url || !input.thread.title) {
+      throw new ValidationError('missing required thread fields');
+    }
+    if (!Array.isArray(input.posts)) {
+      throw new ValidationError('posts must be an array');
+    }
+    for (const post of input.posts) {
+      if (!post.emailHashed || !post.content) {
+        throw new ValidationError('missing required post fields');
+      }
+    }
+  }
+
   private emptyThread(seed: Partial<Pick<Thread, 'id' | 'url'>>): Thread {
     return {
-      id: seed.id ?? '',
+      id: seed.id ?? 0,
       url: seed.url ?? '',
       title: '',
       firstPostAt: 0,

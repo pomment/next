@@ -1,5 +1,5 @@
 import type { PommentCore } from '../core';
-import type { CreateAdminPostInput, CreateUserPostInput, Post } from '../core/domain/post';
+import type { CreateAdminPostInput, CreateUserPostInput, ImportThreadInput, Post } from '../core/domain/post';
 import type { Thread } from '../core/domain/thread';
 import { NotFoundError } from '../core/errors';
 import { readJson } from './body';
@@ -34,7 +34,7 @@ export function createHandler(core: PommentCore): (request: Request) => Promise<
     {
       method: 'GET',
       path: '/public/thread/meta/:id',
-      handler: async (_request, params) => jsonSuccess(await core.getThreadMetaById(params.id)),
+      handler: async (_request, params) => jsonSuccess(await core.getThreadMetaById(Number(params.id))),
     },
     {
       method: 'POST',
@@ -55,7 +55,7 @@ export function createHandler(core: PommentCore): (request: Request) => Promise<
     {
       method: 'GET',
       path: '/public/posts/:id',
-      handler: async (_request, params) => jsonSuccess(await core.listPublicPostsById(params.id)),
+      handler: async (_request, params) => jsonSuccess(await core.listPublicPostsById(Number(params.id))),
     },
     {
       method: 'POST',
@@ -81,7 +81,7 @@ export function createHandler(core: PommentCore): (request: Request) => Promise<
     {
       method: 'GET',
       path: '/admin/thread/:id',
-      handler: async (_request, params) => jsonSuccess(await core.listAllPostsById(params.id)),
+      handler: async (_request, params) => jsonSuccess(await core.listAllPostsById(Number(params.id))),
     },
     {
       method: 'POST',
@@ -94,7 +94,7 @@ export function createHandler(core: PommentCore): (request: Request) => Promise<
     {
       method: 'GET',
       path: '/admin/thread/meta/:id',
-      handler: async (_request, params) => jsonSuccess(await core.getThreadMetaById(params.id)),
+      handler: async (_request, params) => jsonSuccess(await core.getThreadMetaById(Number(params.id))),
     },
     {
       method: 'PUT',
@@ -102,16 +102,24 @@ export function createHandler(core: PommentCore): (request: Request) => Promise<
       handler: async request => jsonSuccess(await core.updateThreadMeta(await readJson<Thread>(request))),
     },
     {
+      method: 'POST',
+      path: '/admin/thread/import',
+      handler: async request => {
+        const body = await readJson<ImportThreadInput>(request);
+        return jsonSuccess(await core.importThread(body));
+      },
+    },
+    {
       method: 'GET',
       path: '/admin/posts/:threadId/:postId',
-      handler: async (_request, params) => jsonSuccess(await core.getPost(params.threadId, params.postId)),
+      handler: async (_request, params) => jsonSuccess(await core.getPost(Number(params.threadId), Number(params.postId))),
     },
     {
       method: 'POST',
       path: '/admin/posts/:id',
       handler: async (request, params) => {
         const body = await readJson<Omit<CreateAdminPostInput, 'threadId'>>(request);
-        return jsonSuccess(await core.createAdminPost({ ...body, threadId: params.id }));
+        return jsonSuccess(await core.createAdminPost({ ...body, threadId: Number(params.id) }));
       },
     },
     {
@@ -119,7 +127,7 @@ export function createHandler(core: PommentCore): (request: Request) => Promise<
       path: '/admin/posts/:id',
       handler: async (request, params) => {
         const body = await readJson<Post>(request);
-        return jsonSuccess(await core.editPost({ threadId: params.id, post: body, alterEditTime: true }));
+        return jsonSuccess(await core.editPost({ threadId: Number(params.id), post: body, alterEditTime: true }));
       },
     },
   ];

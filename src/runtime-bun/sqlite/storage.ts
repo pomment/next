@@ -41,9 +41,9 @@ export class BunSqliteStorage implements StoragePort {
     }
   }
 
-  async getThreadById(id: string): Promise<Thread | null> {
+  async getThreadById(id: number): Promise<Thread | null> {
     const row = this.db
-      .query<ThreadRow, [string]>('SELECT * FROM threads WHERE id = ?')
+      .query<ThreadRow, [number]>('SELECT * FROM threads WHERE id = ?')
       .get(id);
     return row ? threadFromRow(row) : null;
   }
@@ -55,14 +55,13 @@ export class BunSqliteStorage implements StoragePort {
     return row ? threadFromRow(row) : null;
   }
 
-  async createThread(thread: Thread): Promise<void> {
+  async createThread(thread: Thread): Promise<number> {
     this.db
       .query(`
-        INSERT INTO threads (id, url, title, first_post_at, latest_post_at, amount, locked)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO threads (url, title, first_post_at, latest_post_at, amount, locked)
+        VALUES (?, ?, ?, ?, ?, ?)
       `)
       .run(
-        thread.id,
         thread.url,
         thread.title,
         thread.firstPostAt,
@@ -70,6 +69,7 @@ export class BunSqliteStorage implements StoragePort {
         thread.amount,
         thread.locked ? 1 : 0,
       );
+    return (this.db.query('SELECT last_insert_rowid() AS id').get() as { id: number }).id;
   }
 
   async updateThread(thread: Thread): Promise<void> {
@@ -97,32 +97,31 @@ export class BunSqliteStorage implements StoragePort {
       .map(threadFromRow);
   }
 
-  async listPosts(threadId: string): Promise<Post[]> {
+  async listPosts(threadId: number): Promise<Post[]> {
     return this.db
-      .query<PostRow, [string]>('SELECT * FROM posts WHERE thread_id = ? ORDER BY created_at ASC, id ASC')
+      .query<PostRow, [number]>('SELECT * FROM posts WHERE thread_id = ? ORDER BY created_at ASC, id ASC')
       .all(threadId)
       .map(postFromRow);
   }
 
-  async getPost(threadId: string, postId: string): Promise<Post | null> {
+  async getPost(threadId: number, postId: number): Promise<Post | null> {
     const row = this.db
-      .query<PostRow, [string, string]>('SELECT * FROM posts WHERE thread_id = ? AND id = ?')
+      .query<PostRow, [number, number]>('SELECT * FROM posts WHERE thread_id = ? AND id = ?')
       .get(threadId, postId);
     return row ? postFromRow(row) : null;
   }
 
-  async appendPost(threadId: string, post: Post): Promise<void> {
+  async appendPost(threadId: number, post: Post): Promise<number> {
     this.db
       .query(`
         INSERT INTO posts (
-          id, thread_id, name, email, email_hashed, website, parent, content,
+          thread_id, name, email, email_hashed, website, parent, content,
           hidden, by_admin, receive_email, edit_key, created_at, updated_at,
           orig_content, avatar, rating
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
-        post.id,
         threadId,
         post.name,
         post.email,
@@ -140,9 +139,10 @@ export class BunSqliteStorage implements StoragePort {
         post.avatar,
         post.rating,
       );
+    return (this.db.query('SELECT last_insert_rowid() AS id').get() as { id: number }).id;
   }
 
-  async updatePost(threadId: string, post: Post): Promise<void> {
+  async updatePost(threadId: number, post: Post): Promise<void> {
     this.db
       .query(`
         UPDATE posts
@@ -170,5 +170,9 @@ export class BunSqliteStorage implements StoragePort {
         threadId,
         post.id,
       );
+  }
+
+  async deletePostsByThread(threadId: number): Promise<void> {
+    this.db.query('DELETE FROM posts WHERE thread_id = ?').run(threadId);
   }
 }

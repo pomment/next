@@ -3,12 +3,12 @@ export interface Thread {
   firstPostAt: number;
   latestPostAt: number;
   amount: number;
-  id: string;
+  id: number;
   locked: boolean;
   url: string;
 }
 
 export interface ThreadMapItem {
-  id: string;
+  id: number;
   url: string;
 }

@@ -2,7 +2,7 @@ import type { Post } from '../../core/domain/post';
 import type { Thread } from '../../core/domain/thread';
 
 export interface ThreadRow {
-  id: string;
+  id: number;
   url: string;
   title: string;
   first_post_at: number;
@@ -12,13 +12,13 @@ export interface ThreadRow {
 }
 
 export interface PostRow {
-  id: string;
-  thread_id: string;
+  id: number;
+  thread_id: number;
   name: string;
   email: string;
   email_hashed: string;
   website: string;
-  parent: string;
+  parent: number;
   content: string;
   hidden: number;
   by_admin: number;
