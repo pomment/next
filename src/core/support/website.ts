@@ -10,3 +10,12 @@ export function sanitizeWebsite(website: string | undefined): string {
 
   return '';
 }
+
+export function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}

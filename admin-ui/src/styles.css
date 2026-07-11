@@ -50,6 +50,7 @@ button, input, textarea { font: inherit; }
 .page-header { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 32px; }
 .page-header h1 { font-size: 34px; letter-spacing: -.04em; margin: 0 0 8px; color: #182131; }
 .page-header p { color: #778195; margin: 0; word-break: break-all; }
+.header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 20px; }
 .stats-grid .t-card { box-shadow: 0 5px 18px rgba(24, 33, 49, .04); }
 .stats-grid span, .stats-grid small, .stats-grid strong { display: block; }
@@ -61,6 +62,8 @@ button, input, textarea { font: inherit; }
 .table-tools h2 { margin: 0 0 3px; font-size: 18px; }
 .table-tools span { color: #9aa3b1; font-size: 12px; }
 .table-tools .t-input__wrap { width: 290px; }
+.tool-controls { display: flex; align-items: center; gap: 18px; }
+.switch-label { display: flex; align-items: center; gap: 9px; color: #788395; font-size: 12px; white-space: nowrap; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 760px; }
 th { color: #8993a3; background: #f7f8fa; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; text-align: left; padding: 13px 16px; }
@@ -74,19 +77,50 @@ td a { color: #8a95a6; max-width: 440px; overflow: hidden; text-overflow: ellips
 .back-button { margin: -12px 0 22px -12px; color: #697386; }
 .thread-strip { display: flex; align-items: center; gap: 20px; padding: 14px 18px; background: white; color: #788395; border-radius: 8px; font-size: 12px; margin: -12px 0 20px; box-shadow: 0 4px 14px rgba(24,33,49,.035); }
 .comments-list { display: grid; gap: 14px; min-height: 100px; }
-.comment-card { background: white; border: 1px solid transparent; border-radius: 10px; padding: 20px 22px 0; box-shadow: 0 5px 18px rgba(24,33,49,.04); transition: opacity .2s, border-color .2s; }
+.comment-card { margin-left: calc(var(--depth, 0) * 28px); background: white; border: 1px solid transparent; border-radius: 10px; padding: 20px 22px 0; box-shadow: 0 5px 18px rgba(24,33,49,.04); transition: opacity .2s, border-color .2s, box-shadow .2s; }
 .comment-card:hover { border-color: #dce5f5; }
 .comment-card.is-hidden { opacity: .58; border-style: dashed; border-color: #c5ccd7; }
+.comment-card.is-highlighted { border-color: #1463ff; box-shadow: 0 0 0 3px rgba(20,99,255,.12), 0 12px 30px rgba(24,33,49,.1); }
 .comment-author { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
 .comment-author strong, .comment-author span { display: block; }
 .comment-author strong { color: #202a3b; font-size: 14px; }
 .comment-author span, .comment-author time { color: #929baa; font-size: 11px; margin-top: 5px; }
+.post-avatar { width: 42px; height: 42px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: linear-gradient(145deg, #eaf1ff, #d8e5ff); color: #2464d8; font-weight: 800; }
+.post-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.comment-author .inline-tags { display: inline-flex; gap: 5px; margin: 0 0 0 5px; vertical-align: middle; }
 .comment-content { padding: 20px 4px 22px 54px; color: #3e4859; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
 .comment-actions { min-height: 48px; margin: 0 -22px; padding: 8px 18px 8px 70px; display: flex; justify-content: space-between; align-items: center; background: #fafbfc; border-radius: 0 0 10px 10px; border-top: 1px solid #f0f2f5; }
 .comment-actions label { display: flex; align-items: center; gap: 9px; color: #8a94a4; font-size: 11px; }
 .reply-quote { color: #697386; background: #f5f7fa; border-left: 3px solid #8cb3ff; margin: 0 0 18px; padding: 12px 15px; line-height: 1.6; max-height: 100px; overflow: auto; }
+.state-card { min-height: 230px; display: grid; place-items: center; text-align: center; }
+.state-card .t-empty { padding-bottom: 0; }
+.admin-compose { display: grid; grid-template-columns: minmax(180px, .35fr) 1fr auto; align-items: start; gap: 18px; margin-bottom: 18px; box-shadow: 0 5px 18px rgba(24,33,49,.04); }
+.admin-compose strong, .admin-compose span { display: block; }
+.admin-compose strong { color: #202a3b; margin-bottom: 6px; }
+.admin-compose span { color: #929baa; font-size: 11px; }
+.post-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 20px 0 14px; }
+.view-tabs { display: inline-flex; padding: 3px; border-radius: 8px; background: #e8ebf0; }
+.view-tabs button { border: 0; border-radius: 6px; padding: 7px 15px; color: #778195; background: transparent; cursor: pointer; font-size: 12px; }
+.view-tabs button.active { color: #1f2937; background: white; box-shadow: 0 2px 7px rgba(24,33,49,.1); }
+.narrow-page { max-width: 1060px; }
+.editor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 310px; align-items: start; gap: 18px; }
+.form-card, .technical-card { box-shadow: 0 6px 24px rgba(24,33,49,.05); }
+.form-card h2, .technical-card h2 { margin: 0 0 24px; color: #202a3b; font-size: 18px; }
+.form-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.toggle-grid { display: flex; flex-wrap: wrap; gap: 14px 28px; padding: 6px 0 26px; }
+.toggle-grid label { display: flex; align-items: center; gap: 10px; color: #596579; font-size: 13px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #edf0f4; }
+.technical-card dl { margin: 0; }
+.technical-card dt { color: #939cab; font-size: 11px; margin-top: 15px; }
+.technical-card dd { color: #465267; margin: 4px 0 0; overflow-wrap: anywhere; font-size: 12px; }
+.pre-value { max-height: 160px; overflow: auto; padding: 10px; border-radius: 6px; background: #f6f7f9; white-space: pre-wrap; }
+.locked-row { display: flex; align-items: center; justify-content: space-between; padding: 18px; margin: 6px 0 24px; border: 1px solid #e7eaf0; border-radius: 8px; }
+.locked-row strong, .locked-row small { display: block; }
+.locked-row strong { color: #303b4d; font-size: 13px; }
+.locked-row small { color: #939cab; margin-top: 5px; }
 
 @media (max-width: 850px) {
+  .admin-layout { display: block; }
   .login-page { display: block; background: #f7f8fa; }
   .login-intro { min-height: 310px; padding: 36px 28px; }
   .login-intro h1 { font-size: 38px; margin-top: 46px; }
@@ -100,16 +134,36 @@ td a { color: #8a95a6; max-width: 440px; overflow: hidden; text-overflow: ellips
   .identity-card > div, .identity-card > .t-avatar { display: none; }
   .logout.t-button { width: 36px; min-width: 36px; height: 36px; padding: 0; overflow: hidden; font-size: 0; justify-content: center; }
   .logout.t-button svg { font-size: 18px; margin: 0; }
-  .main-content { margin-left: 0; }
+  .main-content { width: 100%; margin-left: 0; }
   .page { padding: 28px 16px 60px; }
   .page-header { align-items: flex-start; }
+  .header-actions { justify-content: flex-start; }
   .page-header h1 { font-size: 28px; }
   .stats-grid { grid-template-columns: 1fr; }
   .table-tools { align-items: stretch; flex-direction: column; }
   .table-tools .t-input__wrap { width: 100%; }
+  .tool-controls { align-items: stretch; flex-direction: column; gap: 12px; }
   .comment-author { grid-template-columns: auto 1fr; }
   .comment-author time { grid-column: 2; }
   .comment-content { padding-left: 0; }
   .comment-actions { padding-left: 12px; }
   .thread-strip { flex-wrap: wrap; gap: 10px 16px; }
+  .admin-compose { grid-template-columns: 1fr; }
+  .admin-compose .t-button { justify-self: end; }
+  .editor-grid { grid-template-columns: 1fr; }
+  .technical-card { order: 2; }
+  .comment-card { margin-left: calc(var(--depth, 0) * 10px); }
+  .comment-actions { align-items: flex-end; gap: 8px; }
+}
+
+@media (max-width: 520px) {
+  .page-header { display: block; }
+  .header-actions { margin-top: 18px; }
+  .header-actions .t-button { flex: 1; }
+  .form-columns { grid-template-columns: 1fr; gap: 0; }
+  .post-toolbar { gap: 14px; }
+  .comment-card { padding-left: 15px; padding-right: 15px; }
+  .comment-actions { margin-left: -15px; margin-right: -15px; flex-direction: column; align-items: stretch; }
+  .comment-actions label { align-self: flex-end; }
+  .comment-author time { font-size: 10px; }
 }

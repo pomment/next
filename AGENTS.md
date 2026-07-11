@@ -93,7 +93,7 @@ For HTTP entry changes, also smoke test the server:
 
 ```sh
 PORT=18080 POMMENT_DB=/tmp/pomment-next-smoke.db bun run src/entry-bun/server.ts
-curl -fsS http://127.0.0.1:18080/health
+curl -fsS http://127.0.0.1:18080/api/health
 ```
 
 Expected health response:

@@ -11,7 +11,7 @@
           "v": "17",
           "name": "Health check",
           "method": "GET",
-          "endpoint": "<<baseUrl>>/health",
+          "endpoint": "<<baseUrl>>/api/health",
           "params": [],
           "headers": [],
           "body": {
@@ -32,7 +32,7 @@
           "v": "17",
           "name": "Admin health check",
           "method": "GET",
-          "endpoint": "<<baseUrl>>/admin/health",
+          "endpoint": "<<baseUrl>>/api/admin/health",
           "params": [],
           "headers": [],
           "body": {
@@ -90,7 +90,7 @@
           "v": "17",
           "name": "Get thread meta by ID",
           "method": "GET",
-          "endpoint": "<<baseUrl>>/public/thread/meta/<<threadId>>",
+          "endpoint": "<<baseUrl>>/api/public/thread/meta/<<threadId>>",
           "params": [],
           "headers": [],
           "body": {
@@ -111,7 +111,7 @@
           "v": "17",
           "name": "Get thread meta by URL",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/public/thread/meta/byUrl",
+          "endpoint": "<<baseUrl>>/api/public/thread/meta/byUrl",
           "params": [],
           "headers": [
             {
@@ -139,7 +139,7 @@
           "v": "17",
           "name": "Get thread meta by URLs",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/public/thread/meta/byUrls",
+          "endpoint": "<<baseUrl>>/api/public/thread/meta/byUrls",
           "params": [],
           "headers": [
             {
@@ -183,7 +183,7 @@
           "v": "17",
           "name": "List public posts by thread ID",
           "method": "GET",
-          "endpoint": "<<baseUrl>>/public/posts/<<threadId>>",
+          "endpoint": "<<baseUrl>>/api/public/posts/<<threadId>>",
           "params": [],
           "headers": [],
           "body": {
@@ -204,7 +204,7 @@
           "v": "17",
           "name": "List public posts by URL",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/public/posts/byUrl",
+          "endpoint": "<<baseUrl>>/api/public/posts/byUrl",
           "params": [],
           "headers": [
             {
@@ -232,7 +232,7 @@
           "v": "17",
           "name": "Add user post",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/public/posts/add",
+          "endpoint": "<<baseUrl>>/api/public/posts/add",
           "params": [],
           "headers": [
             {
@@ -276,7 +276,7 @@
           "v": "17",
           "name": "List all threads",
           "method": "GET",
-          "endpoint": "<<baseUrl>>/admin/thread/list",
+          "endpoint": "<<baseUrl>>/api/admin/thread/list",
           "params": [],
           "headers": [],
           "body": {
@@ -297,7 +297,7 @@
           "v": "17",
           "name": "Get thread with all posts",
           "method": "GET",
-          "endpoint": "<<baseUrl>>/admin/thread/<<threadId>>",
+          "endpoint": "<<baseUrl>>/api/admin/thread/<<threadId>>",
           "params": [],
           "headers": [],
           "body": {
@@ -318,7 +318,7 @@
           "v": "17",
           "name": "Refresh all thread meta",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/admin/thread/refresh",
+          "endpoint": "<<baseUrl>>/api/admin/thread/refresh",
           "params": [],
           "headers": [],
           "body": {
@@ -339,7 +339,7 @@
           "v": "17",
           "name": "Get thread meta (admin)",
           "method": "GET",
-          "endpoint": "<<baseUrl>>/admin/thread/meta/<<threadId>>",
+          "endpoint": "<<baseUrl>>/api/admin/thread/meta/<<threadId>>",
           "params": [],
           "headers": [],
           "body": {
@@ -360,7 +360,7 @@
           "v": "17",
           "name": "Import legacy thread",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/admin/thread/import",
+          "endpoint": "<<baseUrl>>/api/admin/thread/import",
           "params": [],
           "headers": [
             {
@@ -388,7 +388,7 @@
           "v": "17",
           "name": "Update thread meta",
           "method": "PUT",
-          "endpoint": "<<baseUrl>>/admin/thread/meta",
+          "endpoint": "<<baseUrl>>/api/admin/thread/meta",
           "params": [],
           "headers": [
             {
@@ -400,7 +400,7 @@
           ],
            "body": {
             "contentType": "application/json",
-            "body": "{\n  \"title\": \"Updated Title\",\n  \"firstPostAt\": 0,\n  \"latestPostAt\": 0,\n  \"amount\": 0,\n  \"id\": <<threadId>>,\n  \"locked\": false,\n  \"url\": \"https://example.com/hello-world\"\n}"
+            "body": "{\n  \"id\": <<threadId>>,\n  \"title\": \"Updated Title\",\n  \"url\": \"https://example.com/hello-world\",\n  \"locked\": false\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -432,7 +432,7 @@
           "v": "17",
           "name": "Get single post",
           "method": "GET",
-          "endpoint": "<<baseUrl>>/admin/posts/<<threadId>>/<<postId>>",
+          "endpoint": "<<baseUrl>>/api/admin/posts/<<threadId>>/<<postId>>",
           "params": [],
           "headers": [],
           "body": {
@@ -453,7 +453,7 @@
           "v": "17",
           "name": "Add admin post",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/admin/posts/<<threadId>>",
+          "endpoint": "<<baseUrl>>/api/admin/posts/<<threadId>>",
           "params": [],
           "headers": [
             {
@@ -481,7 +481,7 @@
           "v": "17",
           "name": "Edit post",
           "method": "PUT",
-          "endpoint": "<<baseUrl>>/admin/posts/<<threadId>>",
+          "endpoint": "<<baseUrl>>/api/admin/posts/<<threadId>>",
           "params": [],
           "headers": [
             {
@@ -493,7 +493,7 @@
           ],
            "body": {
             "contentType": "application/json",
-            "body": "{\n  \"id\": <<postId>>,\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"emailHashed\": \"c160f8cc69a4f0bf2b0362752353d060\",\n  \"website\": \"\",\n  \"parent\": 0,\n  \"content\": \"Edited comment content.\",\n  \"hidden\": false,\n  \"byAdmin\": false,\n  \"receiveEmail\": false,\n  \"editKey\": \"abc123def456\",\n  \"createdAt\": 1700000000000,\n  \"updatedAt\": 1700000000000,\n  \"origContent\": \"Edited comment content.\",\n  \"avatar\": \"\",\n  \"rating\": 0\n}"
+            "body": "{\n  \"id\": <<postId>>,\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"website\": \"\",\n  \"content\": \"Edited comment content.\",\n  \"hidden\": false,\n  \"receiveEmail\": false,\n  \"byAdmin\": false\n}"
           },
           "auth": {
             "authType": "inherit",

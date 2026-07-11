@@ -69,7 +69,7 @@ async function importThread(meta: LegacyMeta, posts: LegacyPost[]): Promise<void
     })),
   };
 
-  const response = await fetch(`http://${POMMENT_HOST}:${POMMENT_PORT}/admin/thread/import`, {
+  const response = await fetch(`http://${POMMENT_HOST}:${POMMENT_PORT}/api/admin/thread/import`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

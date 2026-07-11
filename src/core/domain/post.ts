@@ -53,9 +53,19 @@ export interface CreateAdminPostInput {
   content: string;
 }
 
-export interface EditPostInput {
+export interface AdminEditPostInput {
+  id: number;
+  name: string;
+  email: string;
+  website: string;
+  content: string;
+  hidden: boolean;
+  receiveEmail: boolean;
+  byAdmin: boolean;
+}
+
+export interface EditPostInput extends AdminEditPostInput {
   threadId: number;
-  post: Post;
   alterEditTime?: boolean;
 }
 

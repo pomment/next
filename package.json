@@ -4,19 +4,21 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "admin-ui-temp"
+    "admin-ui"
   ],
   "scripts": {
     "dev": "bun run src/entry-bun/server.ts",
-    "admin:dev": "bun run --cwd admin-ui-temp dev",
-    "admin:build": "bun run --cwd admin-ui-temp build",
-    "admin:preview": "bun run --cwd admin-ui-temp preview",
+    "admin:dev": "bun run --cwd admin-ui dev",
+    "admin:build": "bun run --cwd admin-ui build",
+    "admin:preview": "bun run --cwd admin-ui preview",
     "auth:hash-password": "bun run src/entry-bun/hash-password.ts",
     "test": "bun test",
+    "test:admin-e2e": "bun run admin:build && bun run e2e/admin-ui.ts",
     "test:smoke": "bun run e2e/smoke.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "playwright": "^1.55.0",
     "bun-types": "latest",
     "typescript": "^5.9.3"
   },

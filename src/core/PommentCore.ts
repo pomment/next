@@ -9,14 +9,14 @@ import type {
   Post,
   PostListResult,
 } from './domain/post';
-import type { Thread } from './domain/thread';
-import { NotFoundError, ValidationError } from './errors';
+import type { Thread, UpdateThreadInput } from './domain/thread';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from './errors';
 import { InlineJobPort, type JobPort } from './ports/jobs';
 import type { StoragePort } from './ports/storage';
 import { generateEditKey } from './support/edit-key';
 import { hashEmail } from './support/email-hash';
 import { toPublicPost } from './support/public-post';
-import { sanitizeWebsite } from './support/website';
+import { isHttpUrl, sanitizeWebsite } from './support/website';
 
 export interface PommentCoreDeps {
   storage: StoragePort;
@@ -108,6 +108,8 @@ export class PommentCore {
           locked: false,
         };
         thread.id = await storage.createThread(thread);
+      } else if (thread.locked) {
+        throw new ForbiddenError('thread is locked');
       }
 
       const now = Date.now();
@@ -175,15 +177,27 @@ export class PommentCore {
   }
 
   async editPost(input: EditPostInput): Promise<Post> {
+    this.validateAdminEditPostInput(input);
+
     return this.deps.storage.transaction(async storage => {
-      const existing = await storage.getPost(input.threadId, input.post.id);
+      const existing = await storage.getPost(input.threadId, input.id);
       if (!existing) {
         throw new NotFoundError('unable to find post');
       }
 
       const updated: Post = {
-        ...input.post,
-        updatedAt: input.alterEditTime === false ? input.post.updatedAt : Date.now(),
+        ...existing,
+        name: input.name,
+        email: input.email,
+        emailHashed: input.email === existing.email
+          ? existing.emailHashed
+          : await hashEmail(input.email, this.config.avatarHash),
+        website: sanitizeWebsite(input.website),
+        content: input.content,
+        hidden: input.hidden,
+        receiveEmail: input.receiveEmail,
+        byAdmin: input.byAdmin,
+        updatedAt: input.alterEditTime === false ? existing.updatedAt : Date.now(),
       };
 
       await storage.updatePost(input.threadId, updated);
@@ -207,9 +221,31 @@ export class PommentCore {
     return this.deps.storage.listThreads();
   }
 
-  async updateThreadMeta(thread: Thread): Promise<Thread> {
-    await this.deps.storage.updateThread(thread);
-    return thread;
+  async updateThreadMeta(input: UpdateThreadInput): Promise<Thread> {
+    this.validateUpdateThreadInput(input);
+    if (!isHttpUrl(input.url)) {
+      throw new ValidationError('thread URL must be a valid http or https URL');
+    }
+
+    return this.deps.storage.transaction(async storage => {
+      const thread = await storage.getThreadById(input.id);
+      if (!thread) {
+        throw new NotFoundError('thread not found');
+      }
+      const conflictingThread = await storage.getThreadByUrl(input.url);
+      if (conflictingThread && conflictingThread.id !== input.id) {
+        throw new ConflictError('thread URL already exists');
+      }
+
+      const updated = {
+        ...thread,
+        title: input.title,
+        url: input.url,
+        locked: input.locked,
+      };
+      await storage.updateThread(updated);
+      return updated;
+    });
   }
 
   private async refreshThreadMetaWithStorage(storage: StoragePort, threadId: number): Promise<Thread> {
@@ -347,6 +383,28 @@ export class PommentCore {
   private validateAdminPostInput(input: CreateAdminPostInput): void {
     if (!input.threadId || !input.name || !input.email || !input.content) {
       throw new ValidationError('missing required admin comment fields');
+    }
+  }
+
+  private validateAdminEditPostInput(input: EditPostInput): void {
+    if (!Number.isSafeInteger(input.id) || input.id <= 0
+      || typeof input.name !== 'string' || !input.name.trim()
+      || typeof input.email !== 'string' || !input.email.trim()
+      || typeof input.website !== 'string'
+      || typeof input.content !== 'string' || !input.content.trim()
+      || typeof input.hidden !== 'boolean'
+      || typeof input.receiveEmail !== 'boolean'
+      || typeof input.byAdmin !== 'boolean') {
+      throw new ValidationError('invalid admin comment fields');
+    }
+  }
+
+  private validateUpdateThreadInput(input: UpdateThreadInput): void {
+    if (!Number.isSafeInteger(input.id) || input.id <= 0
+      || typeof input.title !== 'string' || !input.title.trim()
+      || typeof input.url !== 'string'
+      || typeof input.locked !== 'boolean') {
+      throw new ValidationError('invalid thread fields');
     }
   }
 }

@@ -16,18 +16,20 @@ Admin routes use a single deployment-managed administrator password and opaque s
 bun install
 bun test
 bun run typecheck
+bunx playwright install chromium
+bun run test:admin-e2e
 bun run dev
 bun run auth:hash-password
 ```
 
-The temporary admin UI is the `admin-ui-temp` package in the Bun workspace:
+The admin UI is the `admin-ui` package in the Bun workspace:
 
 ```sh
 bun install
 bun run admin:dev
 ```
 
-During development, Vite proxies `/admin` API requests to the Bun entry at `http://127.0.0.1:8080` and supplies the trusted loopback client IP header.
+During development, Vite proxies `/api` requests to the Bun entry at `http://127.0.0.1:8080` and supplies the trusted loopback client IP header. Run `bun run admin:build` before production startup; the Bun entry serves the built SPA at `/admin` and warns without disabling APIs when the build is missing.
 
 The Bun entry listens on loopback using `PORT` or `8080`, and stores data in `POMMENT_DB` or `pomment.db`. Put nginx or Caddy in front of it and overwrite `X-Real-IP` with the connecting client address. Do not share that loopback network namespace with untrusted workloads.
 
@@ -61,27 +63,27 @@ Missing or invalid auth configuration fails closed with HTTP 503 for admin route
 
 ## Implemented Routes
 
-- `GET /health`
+- `GET /api/health`
 - `GET /robots.txt`
-- `GET /public/thread/meta/:id`
-- `POST /public/thread/meta/byUrl`
-- `POST /public/thread/meta/byUrls`
-- `GET /public/posts/:id`
-- `POST /public/posts/byUrl`
-- `POST /public/posts/add`
-- `POST /admin/login`
-- `POST /admin/logout`
-- `GET /admin/health`
-- `GET /admin/thread/list`
-- `GET /admin/thread/:id`
-- `POST /admin/thread/refresh`
-- `GET /admin/thread/meta/:id`
-- `PUT /admin/thread/meta`
-- `GET /admin/posts/:threadId/:postId`
-- `POST /admin/posts/:id`
-- `PUT /admin/posts/:id`
+- `GET /api/public/thread/meta/:id`
+- `POST /api/public/thread/meta/byUrl`
+- `POST /api/public/thread/meta/byUrls`
+- `GET /api/public/posts/:id`
+- `POST /api/public/posts/byUrl`
+- `POST /api/public/posts/add`
+- `POST /api/admin/login`
+- `POST /api/admin/logout`
+- `GET /api/admin/health`
+- `GET /api/admin/thread/list`
+- `GET /api/admin/thread/:id`
+- `POST /api/admin/thread/refresh`
+- `GET /api/admin/thread/meta/:id`
+- `PUT /api/admin/thread/meta`
+- `GET /api/admin/posts/:threadId/:postId`
+- `POST /api/admin/posts/:id`
+- `PUT /api/admin/posts/:id`
 
-All admin routes except `POST /admin/login` require the HttpOnly admin session cookie. Unsafe admin requests must come from `POMMENT_ADMIN_ORIGIN`.
+All admin routes except `POST /api/admin/login` require the HttpOnly admin session cookie. Unsafe admin requests must come from `POMMENT_ADMIN_ORIGIN`.
 
 ## Deferred
 

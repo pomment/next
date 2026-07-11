@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { PommentCore, type Post, type StoragePort, type Thread } from '../src/core';
+import { PommentCore, type EditPostInput, type Post, type StoragePort, type Thread, type UpdateThreadInput } from '../src/core';
 
 class MemoryStorage implements StoragePort {
   private threads = new Map<number, Thread>();
@@ -114,7 +114,14 @@ describe('PommentCore', () => {
 
     const edited = await core.editPost({
       threadId: hiddenResult.meta.id,
-      post: { ...post, hidden: false },
+      id: post.id,
+      name: post.name,
+      email: post.email,
+      website: post.website,
+      content: post.content,
+      hidden: false,
+      receiveEmail: post.receiveEmail,
+      byAdmin: post.byAdmin,
       alterEditTime: false,
     });
     expect(edited.hidden).toBe(false);
@@ -122,5 +129,116 @@ describe('PommentCore', () => {
     const visibleResult = await core.listPublicPostsByUrl('https://example.com/hidden');
     expect(visibleResult.meta.amount).toBe(1);
     expect(visibleResult.post).toHaveLength(1);
+  });
+
+  test('updates only public thread metadata fields', async () => {
+    const storage = new MemoryStorage();
+    const core = new PommentCore({ storage });
+    await core.createUserPost({
+      url: 'https://example.com/original',
+      title: 'Original',
+      name: 'Alice',
+      email: 'alice@example.com',
+      content: 'hello',
+    });
+    const original = await core.getThreadMetaByUrl('https://example.com/original');
+    const input: UpdateThreadInput & Partial<Thread> = {
+      id: original.id,
+      title: 'Updated',
+      url: 'https://example.com/updated',
+      locked: true,
+      amount: 999,
+      firstPostAt: 1,
+      latestPostAt: 2,
+    };
+
+    const updated = await core.updateThreadMeta(input);
+
+    expect(updated).toEqual({
+      ...original,
+      title: 'Updated',
+      url: 'https://example.com/updated',
+      locked: true,
+    });
+    expect(core.updateThreadMeta({ ...input, id: 999 })).rejects.toThrow('thread not found');
+    expect(core.updateThreadMeta({ ...input, url: 'javascript:alert(1)' })).rejects.toThrow(
+      'thread URL must be a valid http or https URL',
+    );
+    expect(core.updateThreadMeta({ ...input, url: 'https://' })).rejects.toThrow(
+      'thread URL must be a valid http or https URL',
+    );
+    expect(core.createUserPost({
+      url: updated.url,
+      title: updated.title,
+      name: 'Blocked',
+      email: 'blocked@example.com',
+      content: 'blocked',
+    })).rejects.toThrow('thread is locked');
+
+    await core.createUserPost({
+      url: 'https://example.com/conflict',
+      title: 'Conflict',
+      name: 'Alice',
+      email: 'alice@example.com',
+      content: 'hello',
+    });
+    expect(core.updateThreadMeta({ ...input, url: 'https://example.com/conflict' })).rejects.toThrow(
+      'thread URL already exists',
+    );
+    expect(core.updateThreadMeta({ ...input, locked: undefined as unknown as boolean })).rejects.toThrow(
+      'invalid thread fields',
+    );
+  });
+
+  test('admin post edits protect internal fields and derive mutable values', async () => {
+    const storage = new MemoryStorage();
+    const core = new PommentCore({ storage, config: { avatarHash: 'sha256' } });
+    const original = await core.createUserPost({
+      url: 'https://example.com/edit',
+      title: 'Edit',
+      name: 'Alice',
+      email: 'alice@example.com',
+      website: 'https://alice.example',
+      content: 'original',
+    });
+    const thread = await core.getThreadMetaByUrl('https://example.com/edit');
+    const input: EditPostInput & Partial<Post> = {
+      threadId: thread.id,
+      id: original.id,
+      name: 'Admin edit',
+      email: 'new@example.com',
+      website: 'javascript:alert(1)',
+      content: 'edited',
+      hidden: true,
+      receiveEmail: true,
+      byAdmin: true,
+      alterEditTime: false,
+      parent: 999,
+      editKey: 'overwritten',
+      createdAt: 1,
+      updatedAt: 2,
+      origContent: 'overwritten',
+      avatar: 'overwritten',
+      rating: 999,
+      emailHashed: 'overwritten',
+    };
+
+    const edited = await core.editPost(input);
+
+    expect(edited).toEqual({
+      ...original,
+      name: 'Admin edit',
+      email: 'new@example.com',
+      emailHashed: 'f0030501023327437b06e5c6f87df7871b8e704ae608d1d0b7b24fdd2a06c716',
+      website: '',
+      content: 'edited',
+      hidden: true,
+      receiveEmail: true,
+      byAdmin: true,
+    });
+    expect((await core.getThreadMetaById(thread.id)).amount).toBe(0);
+    expect(core.editPost({ ...input, hidden: undefined as unknown as boolean })).rejects.toThrow(
+      'invalid admin comment fields',
+    );
   });
 });

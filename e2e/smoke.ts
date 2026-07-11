@@ -54,8 +54,8 @@ async function main() {
   function req(method: string, path: string, body?: unknown): Request {
     const headers = new Headers();
     if (body !== undefined) headers.set('content-type', 'application/json');
-    if (path.startsWith('/admin/') && adminCookie) headers.set('cookie', adminCookie);
-    if (path.startsWith('/admin/') && method !== 'GET') headers.set('origin', base);
+    if (path.startsWith('/api/admin/') && adminCookie) headers.set('cookie', adminCookie);
+    if (path.startsWith('/api/admin/') && method !== 'GET') headers.set('origin', base);
     return new Request(`${base}${path}`, {
       method,
       headers,
@@ -66,8 +66,8 @@ async function main() {
   try {
     console.log('Pomment Next smoke test\n');
 
-    await scenario('GET /health returns 200', async () => {
-      const res = await handler(req('GET', '/health'));
+    await scenario('GET /api/health returns 200', async () => {
+      const res = await handler(req('GET', '/api/health'));
       assert(res.status === 200, `expected 200, got ${res.status}`);
       const json = (await res.json()) as { code: number; data: unknown };
       assert(json.code === 200, `expected code 200, got ${json.code}`);
@@ -75,12 +75,12 @@ async function main() {
     });
 
     await scenario('admin routes require login', async () => {
-      const res = await handler(req('GET', '/admin/health'));
+      const res = await handler(req('GET', '/api/admin/health'));
       assert(res.status === 401, `expected 401, got ${res.status}`);
     });
 
-    await scenario('POST /admin/login creates a session', async () => {
-      const res = await handler(req('POST', '/admin/login', { password }));
+    await scenario('POST /api/admin/login creates a session', async () => {
+      const res = await handler(req('POST', '/api/admin/login', { password }));
       assert(res.status === 200, `expected 200, got ${res.status}`);
       adminCookie = (res.headers.get('set-cookie') ?? '').split(';', 1)[0];
       assert(adminCookie.startsWith('pomment_admin_session='), 'expected admin session cookie');
@@ -89,9 +89,9 @@ async function main() {
     let threadId = 0;
     let postId = 0;
 
-    await scenario('POST /public/posts/add creates thread and post', async () => {
+    await scenario('POST /api/public/posts/add creates thread and post', async () => {
       const res = await handler(
-        req('POST', '/public/posts/add', {
+        req('POST', '/api/public/posts/add', {
           url: 'https://example.com/smoke',
           title: 'Smoke Test Post',
           name: 'Alice',
@@ -112,9 +112,9 @@ async function main() {
       postId = json.data.id;
     });
 
-    await scenario('POST /public/posts/add discovers existing thread', async () => {
+    await scenario('POST /api/public/posts/add discovers existing thread', async () => {
       const res = await handler(
-        req('POST', '/public/posts/add', {
+        req('POST', '/api/public/posts/add', {
           url: 'https://example.com/smoke',
           title: 'Should Not Update',
           name: 'Bob',
@@ -128,7 +128,7 @@ async function main() {
     });
 
     await scenario('get thread ID via public posts endpoint', async () => {
-      const listRes = await handler(req('POST', '/public/posts/byUrl', { url: 'https://example.com/smoke' }));
+      const listRes = await handler(req('POST', '/api/public/posts/byUrl', { url: 'https://example.com/smoke' }));
       assert(listRes.status === 200, `expected 200, got ${listRes.status}`);
       const listJson = (await listRes.json()) as { code: number; data: any };
       assert(listJson.code === 200, `expected code 200, got ${listJson.code}`);
@@ -136,8 +136,8 @@ async function main() {
       assert(threadId > 0, 'expected threadId to be set');
     });
 
-    await scenario('GET /public/posts/:id hides private fields and counts correctly', async () => {
-      const res = await handler(req('GET', `/public/posts/${threadId}`));
+    await scenario('GET /api/public/posts/:id hides private fields and counts correctly', async () => {
+      const res = await handler(req('GET', `/api/public/posts/${threadId}`));
       assert(res.status === 200, `expected 200, got ${res.status}`);
       const json = (await res.json()) as { code: number; data: any };
       assert(json.code === 200, `expected code 200, got ${json.code}`);
@@ -151,9 +151,9 @@ async function main() {
       }
     });
 
-    await scenario('POST /admin/posts/:threadId creates admin post', async () => {
+    await scenario('POST /api/admin/posts/:threadId creates admin post', async () => {
       const res = await handler(
-        req('POST', `/admin/posts/${threadId}`, {
+        req('POST', `/api/admin/posts/${threadId}`, {
           name: 'Admin',
           email: 'admin@example.com',
           content: 'admin reply',
@@ -165,8 +165,8 @@ async function main() {
       assert(json.data.hidden === false, 'expected hidden to be false');
     });
 
-    await scenario('GET /admin/thread/:id returns all posts with private fields', async () => {
-      const res = await handler(req('GET', `/admin/thread/${threadId}`));
+    await scenario('GET /api/admin/thread/:id returns all posts with private fields', async () => {
+      const res = await handler(req('GET', `/api/admin/thread/${threadId}`));
       assert(res.status === 200, `expected 200, got ${res.status}`);
       const json = (await res.json()) as { code: number; data: any[] };
       assert(json.data.length === 3, `expected 3 posts, got ${json.data.length}`);
@@ -177,18 +177,23 @@ async function main() {
 
     let editedPostUpdatedAt = 0;
 
-    await scenario('PUT /admin/posts/:threadId edits a post', async () => {
-      const getRes = await handler(req('GET', `/admin/posts/${threadId}/${postId}`));
+    await scenario('PUT /api/admin/posts/:threadId edits a post', async () => {
+      const getRes = await handler(req('GET', `/api/admin/posts/${threadId}/${postId}`));
       assert(getRes.status === 200, `expected 200, got ${getRes.status}`);
       const getJson = (await getRes.json()) as { code: number; data: any };
       const original = getJson.data;
       const originalUpdatedAt = original.updatedAt;
 
       const putRes = await handler(
-        req('PUT', `/admin/posts/${threadId}`, {
-          ...original,
+        req('PUT', `/api/admin/posts/${threadId}`, {
+          id: original.id,
+          name: original.name,
+          email: original.email,
+          website: original.website,
           content: 'edited content',
-          alterEditTime: true,
+          hidden: original.hidden,
+          receiveEmail: original.receiveEmail,
+          byAdmin: original.byAdmin,
         }),
       );
       assert(putRes.status === 200, `expected 200, got ${putRes.status}`);
@@ -198,9 +203,9 @@ async function main() {
       editedPostUpdatedAt = putJson.data.updatedAt;
     });
 
-    await scenario('POST /public/posts/add with missing fields returns 400', async () => {
+    await scenario('POST /api/public/posts/add with missing fields returns 400', async () => {
       const res = await handler(
-        req('POST', '/public/posts/add', {
+        req('POST', '/api/public/posts/add', {
           url: 'https://example.com/bad',
           // missing title, name, email, content
         }),
@@ -211,20 +216,20 @@ async function main() {
       assert(json.data === null, 'expected data to be null on error');
     });
 
-    await scenario('GET /admin/posts/:t/:p for non-existent post returns 404', async () => {
-      const res = await handler(req('GET', `/admin/posts/${threadId}/does-not-exist`));
+    await scenario('GET /api/admin/posts/:t/:p for non-existent post returns 404', async () => {
+      const res = await handler(req('GET', `/api/admin/posts/${threadId}/does-not-exist`));
       assert(res.status === 404, `expected 404, got ${res.status}`);
       const json = (await res.json()) as { code: number; data: unknown };
       assert(json.code === 404, `expected code 404, got ${json.code}`);
     });
 
-    await scenario('POST /admin/thread/refresh updates meta correctly', async () => {
-      const res = await handler(req('POST', '/admin/thread/refresh'));
+    await scenario('POST /api/admin/thread/refresh updates meta correctly', async () => {
+      const res = await handler(req('POST', '/api/admin/thread/refresh'));
       assert(res.status === 200, `expected 200, got ${res.status}`);
       const json = (await res.json()) as { code: number; data: unknown };
       assert(json.code === 200, `expected code 200, got ${json.code}`);
 
-      const metaRes = await handler(req('GET', `/admin/thread/meta/${threadId}`));
+      const metaRes = await handler(req('GET', `/api/admin/thread/meta/${threadId}`));
       const metaJson = (await metaRes.json()) as { code: number; data: any };
       assert(metaJson.data.amount === 3, `expected amount 3, got ${metaJson.data.amount}`);
       assert(metaJson.data.firstPostAt > 0, 'expected firstPostAt to be set');
@@ -232,11 +237,11 @@ async function main() {
     });
 
     await scenario('thread meta by URL endpoints work', async () => {
-      const byUrlRes = await handler(req('POST', '/public/thread/meta/byUrl', { url: 'https://example.com/smoke' }));
+      const byUrlRes = await handler(req('POST', '/api/public/thread/meta/byUrl', { url: 'https://example.com/smoke' }));
       const byUrlJson = (await byUrlRes.json()) as { code: number; data: any };
       assert(byUrlJson.data.id === threadId, 'byUrl should return correct thread');
 
-      const byUrlsRes = await handler(req('POST', '/public/thread/meta/byUrls', ['https://example.com/smoke']));
+      const byUrlsRes = await handler(req('POST', '/api/public/thread/meta/byUrls', ['https://example.com/smoke']));
       const byUrlsJson = (await byUrlsRes.json()) as { code: number; data: any };
       assert(byUrlsJson.data['https://example.com/smoke']?.id === threadId, 'byUrls should return correct thread');
     });

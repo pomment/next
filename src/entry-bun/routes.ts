@@ -1,6 +1,6 @@
 import type { AdminAuth, PommentCore } from '../core';
-import type { CreateAdminPostInput, CreateUserPostInput, ImportThreadInput, Post } from '../core/domain/post';
-import type { Thread } from '../core/domain/thread';
+import type { AdminEditPostInput, CreateAdminPostInput, CreateUserPostInput, ImportThreadInput } from '../core/domain/post';
+import type { UpdateThreadInput } from '../core/domain/thread';
 import {
   ForbiddenError,
   NotFoundError,
@@ -43,12 +43,12 @@ export function createHandler(
   const routes: Route[] = [
     {
       method: 'GET',
-      path: '/health',
+      path: '/api/health',
       handler: async () => jsonSuccess(null),
     },
     {
       method: 'POST',
-      path: '/admin/login',
+      path: '/api/admin/login',
       publicAdmin: true,
       handler: async request => {
         const body = await readJsonLimited<{ password?: unknown }>(request, 4096);
@@ -65,7 +65,7 @@ export function createHandler(
     },
     {
       method: 'POST',
-      path: '/admin/logout',
+      path: '/api/admin/logout',
       handler: async request => {
         const clientIp = requestContext.get(request)?.clientIp ?? null;
         await options.adminAuth!.logout(readCookie(request, ADMIN_COOKIE));
@@ -77,7 +77,7 @@ export function createHandler(
     },
     {
       method: 'GET',
-      path: '/admin/health',
+      path: '/api/admin/health',
       handler: async () => jsonSuccess(null),
     },
     {
@@ -87,12 +87,12 @@ export function createHandler(
     },
     {
       method: 'GET',
-      path: '/public/thread/meta/:id',
+      path: '/api/public/thread/meta/:id',
       handler: async (_request, params) => jsonSuccess(await core.getThreadMetaById(Number(params.id))),
     },
     {
       method: 'POST',
-      path: '/public/thread/meta/byUrl',
+      path: '/api/public/thread/meta/byUrl',
       handler: async request => {
         const body = await readJson<{ url: string }>(request);
         return jsonSuccess(await core.getThreadMetaByUrl(body.url));
@@ -100,7 +100,7 @@ export function createHandler(
     },
     {
       method: 'POST',
-      path: '/public/thread/meta/byUrls',
+      path: '/api/public/thread/meta/byUrls',
       handler: async request => {
         const body = await readJson<string[]>(request);
         return jsonSuccess(await core.getThreadMetaByUrls(body));
@@ -108,12 +108,12 @@ export function createHandler(
     },
     {
       method: 'GET',
-      path: '/public/posts/:id',
+      path: '/api/public/posts/:id',
       handler: async (_request, params) => jsonSuccess(await core.listPublicPostsById(Number(params.id))),
     },
     {
       method: 'POST',
-      path: '/public/posts/byUrl',
+      path: '/api/public/posts/byUrl',
       handler: async request => {
         const body = await readJson<{ url: string }>(request);
         return jsonSuccess(await core.listPublicPostsByUrl(body.url));
@@ -121,7 +121,7 @@ export function createHandler(
     },
     {
       method: 'POST',
-      path: '/public/posts/add',
+      path: '/api/public/posts/add',
       handler: async request => {
         const body = await readJson<CreateUserPostInput>(request);
         return jsonSuccess(await core.createUserPost(body));
@@ -129,17 +129,17 @@ export function createHandler(
     },
     {
       method: 'GET',
-      path: '/admin/thread/list',
+      path: '/api/admin/thread/list',
       handler: async () => jsonSuccess(await core.listThreads()),
     },
     {
       method: 'GET',
-      path: '/admin/thread/:id',
+      path: '/api/admin/thread/:id',
       handler: async (_request, params) => jsonSuccess(await core.listAllPostsById(Number(params.id))),
     },
     {
       method: 'POST',
-      path: '/admin/thread/refresh',
+      path: '/api/admin/thread/refresh',
       handler: async () => {
         await core.refreshAllThreadMeta();
         return jsonSuccess(null);
@@ -147,17 +147,17 @@ export function createHandler(
     },
     {
       method: 'GET',
-      path: '/admin/thread/meta/:id',
+      path: '/api/admin/thread/meta/:id',
       handler: async (_request, params) => jsonSuccess(await core.getThreadMetaById(Number(params.id))),
     },
     {
       method: 'PUT',
-      path: '/admin/thread/meta',
-      handler: async request => jsonSuccess(await core.updateThreadMeta(await readJson<Thread>(request))),
+      path: '/api/admin/thread/meta',
+      handler: async request => jsonSuccess(await core.updateThreadMeta(await readJson<UpdateThreadInput>(request))),
     },
     {
       method: 'POST',
-      path: '/admin/thread/import',
+      path: '/api/admin/thread/import',
       handler: async request => {
         const body = await readJson<ImportThreadInput>(request);
         return jsonSuccess(await core.importThread(body));
@@ -165,12 +165,12 @@ export function createHandler(
     },
     {
       method: 'GET',
-      path: '/admin/posts/:threadId/:postId',
+      path: '/api/admin/posts/:threadId/:postId',
       handler: async (_request, params) => jsonSuccess(await core.getPost(Number(params.threadId), Number(params.postId))),
     },
     {
       method: 'POST',
-      path: '/admin/posts/:id',
+      path: '/api/admin/posts/:id',
       handler: async (request, params) => {
         const body = await readJson<Omit<CreateAdminPostInput, 'threadId'>>(request);
         return jsonSuccess(await core.createAdminPost({ ...body, threadId: Number(params.id) }));
@@ -178,10 +178,10 @@ export function createHandler(
     },
     {
       method: 'PUT',
-      path: '/admin/posts/:id',
+      path: '/api/admin/posts/:id',
       handler: async (request, params) => {
-        const body = await readJson<Post>(request);
-        return jsonSuccess(await core.editPost({ threadId: Number(params.id), post: body, alterEditTime: true }));
+        const body = await readJson<AdminEditPostInput>(request);
+        return jsonSuccess(await core.editPost({ ...body, threadId: Number(params.id), alterEditTime: true }));
       },
     },
   ];
@@ -199,7 +199,7 @@ export function createHandler(
 
         const matched = matchPath(route.path, url.pathname);
         if (matched) {
-          if (route.path.startsWith('/admin/')) {
+          if (route.path.startsWith('/api/admin/')) {
             if (!options.adminAuth || !options.adminOrigin) {
               throw new ServiceUnavailableError('admin authentication is not configured');
             }
@@ -216,10 +216,10 @@ export function createHandler(
 
       throw new NotFoundError('route not found');
     } catch (error) {
-      if (pathname.startsWith('/admin/') && error instanceof ServiceUnavailableError) {
+      if (pathname.startsWith('/api/admin/') && error instanceof ServiceUnavailableError) {
         options.onAdminAuthEvent?.('unavailable', context.clientIp);
       }
-      if (pathname === '/admin/login' && error instanceof TooManyRequestsError) {
+      if (pathname === '/api/admin/login' && error instanceof TooManyRequestsError) {
         options.onAdminAuthEvent?.('login-rate-limited', context.clientIp);
       }
       return withAdminHeaders(jsonError(error), pathname);
@@ -248,7 +248,7 @@ function readCookie(request: Request, name: string): string | null {
 function sessionCookie(token: string, expiresAt: number, secure: boolean): string {
   const attributes = [
     `${ADMIN_COOKIE}=${token}`,
-    'Path=/admin',
+    'Path=/api/admin',
     'HttpOnly',
     'SameSite=Strict',
     `Max-Age=${24 * 60 * 60}`,
@@ -263,7 +263,7 @@ function sessionCookie(token: string, expiresAt: number, secure: boolean): strin
 function clearSessionCookie(secure: boolean): string {
   const attributes = [
     `${ADMIN_COOKIE}=`,
-    'Path=/admin',
+    'Path=/api/admin',
     'HttpOnly',
     'SameSite=Strict',
     'Max-Age=0',
@@ -280,7 +280,7 @@ function isUnsafeMethod(method: string): boolean {
 }
 
 function withAdminHeaders(response: Response, pathname: string): Response {
-  if (pathname.startsWith('/admin/')) {
+  if (pathname.startsWith('/api/admin/')) {
     response.headers.set('cache-control', 'no-store');
   }
   return response;

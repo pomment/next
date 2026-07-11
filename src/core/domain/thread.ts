@@ -8,6 +8,13 @@ export interface Thread {
   url: string;
 }
 
+export interface UpdateThreadInput {
+  id: number;
+  title: string;
+  url: string;
+  locked: boolean;
+}
+
 export interface ThreadMapItem {
   id: number;
   url: string;
