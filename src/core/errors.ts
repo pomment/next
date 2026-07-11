@@ -26,3 +26,33 @@ export class ConflictError extends PommentError {
     super(message, 'CONFLICT', 409);
   }
 }
+
+export class UnauthorizedError extends PommentError {
+  constructor(message = 'unauthorized') {
+    super(message, 'UNAUTHORIZED', 401);
+  }
+}
+
+export class ForbiddenError extends PommentError {
+  constructor(message = 'forbidden') {
+    super(message, 'FORBIDDEN', 403);
+  }
+}
+
+export class PayloadTooLargeError extends PommentError {
+  constructor(message = 'payload too large') {
+    super(message, 'PAYLOAD_TOO_LARGE', 413);
+  }
+}
+
+export class TooManyRequestsError extends PommentError {
+  constructor(public readonly retryAfterSeconds: number, message = 'too many requests') {
+    super(message, 'TOO_MANY_REQUESTS', 429);
+  }
+}
+
+export class ServiceUnavailableError extends PommentError {
+  constructor(message = 'service unavailable') {
+    super(message, 'SERVICE_UNAVAILABLE', 503);
+  }
+}

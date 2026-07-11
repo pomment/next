@@ -43,6 +43,7 @@ Core owns Pomment behavior and compatibility rules:
 - New user posts are hidden only when `moderationInitiallyHidden` is enabled.
 - Website URLs must be cleared unless they start with `http://` or `https://`.
 - Default avatar hash behavior is legacy-compatible MD5. SHA-256 is configurable.
+- Admin auth policy owns session lifetime, rate limits, token digests, and auth-version invalidation through ports.
 
 ### `src/runtime-bun`
 
@@ -54,6 +55,8 @@ Current responsibilities:
 - SQLite schema bootstrap
 - row/domain mapping
 - storage transactions
+- Argon2id password verification
+- Redis and explicit in-memory admin session adapters
 
 Do not put HTTP routing or request parsing here. That belongs in `src/entry-bun`.
 
@@ -65,7 +68,7 @@ Keep legacy API compatibility where practical:
 
 - Return JSON envelopes shaped as `{ "code": number, "data": unknown }`.
 - Preserve the existing public/admin route shapes listed in `README.md`.
-- Admin routes are intentionally unauthenticated for the first MVP. Do not treat this as production-ready.
+- Admin authentication uses a deployment-managed password and runtime-backed opaque sessions.
 
 ## Development Rules
 
@@ -113,7 +116,6 @@ Do not implement these unless explicitly requested:
 - legacy JSON data migration
 - Cloudflare Worker adapter
 - Node.js adapter
-- admin authentication
 - email notifications
 - reCAPTCHA
 - FCM push

@@ -1,9 +1,9 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { PommentCore } from '../src/core/index';
+import { AdminAuth, PommentCore } from '../src/core/index';
 import { createHandler } from '../src/entry-bun/routes';
-import { BunSqliteStorage } from '../src/runtime-bun/index';
+import { BunAdminPasswordVerifier, BunSqliteStorage, MemoryAdminAuthStore } from '../src/runtime-bun/index';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -17,7 +17,21 @@ async function main() {
 
   const storage = new BunSqliteStorage({ filename: dbPath });
   const core = new PommentCore({ storage });
-  const handler = createHandler(core);
+  const password = 'correct horse battery staple';
+  const passwordHash = '$argon2id$v=19$m=65536,t=2,p=1$tyQOWKNcs1KKzWRKY7mxeybWiZipXV0MCRqTWswH3vI$hc3lPY7HeprGEZNECMxEAXlCG1g8+XD1jrb/lVeBYno';
+  const authStore = new MemoryAdminAuthStore();
+  const adminAuth = new AdminAuth({
+    passwordVerifier: new BunAdminPasswordVerifier(passwordHash),
+    sessionStore: authStore,
+    loginAttemptStore: authStore,
+    authVersion: 'smoke',
+  });
+  const rawHandler = createHandler(core, {
+    adminAuth,
+    adminOrigin: 'http://localhost',
+    secureAdminCookie: false,
+  });
+  const handler = (request: Request) => rawHandler(request, { clientIp: '127.0.0.1' });
 
   let passed = 0;
 
@@ -35,10 +49,16 @@ async function main() {
 
   const base = 'http://localhost';
 
+  let adminCookie = '';
+
   function req(method: string, path: string, body?: unknown): Request {
+    const headers = new Headers();
+    if (body !== undefined) headers.set('content-type', 'application/json');
+    if (path.startsWith('/admin/') && adminCookie) headers.set('cookie', adminCookie);
+    if (path.startsWith('/admin/') && method !== 'GET') headers.set('origin', base);
     return new Request(`${base}${path}`, {
       method,
-      headers: body !== undefined ? { 'content-type': 'application/json' } : undefined,
+      headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   }
@@ -52,6 +72,18 @@ async function main() {
       const json = (await res.json()) as { code: number; data: unknown };
       assert(json.code === 200, `expected code 200, got ${json.code}`);
       assert(json.data === null, 'expected data to be null');
+    });
+
+    await scenario('admin routes require login', async () => {
+      const res = await handler(req('GET', '/admin/health'));
+      assert(res.status === 401, `expected 401, got ${res.status}`);
+    });
+
+    await scenario('POST /admin/login creates a session', async () => {
+      const res = await handler(req('POST', '/admin/login', { password }));
+      assert(res.status === 200, `expected 200, got ${res.status}`);
+      adminCookie = (res.headers.get('set-cookie') ?? '').split(';', 1)[0];
+      assert(adminCookie.startsWith('pomment_admin_session='), 'expected admin session cookie');
     });
 
     let threadId = 0;

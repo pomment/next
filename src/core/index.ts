@@ -1,4 +1,5 @@
 export * from './PommentCore';
+export * from './AdminAuth';
 export * from './domain/config';
 export * from './domain/post';
 export * from './domain/thread';
@@ -7,3 +8,5 @@ export * from './ports/storage';
 export * from './ports/jobs';
 export * from './ports/email';
 export * from './ports/captcha';
+export * from './ports/admin-auth';
+export * from './support/admin-password';

@@ -1,8 +1,14 @@
-import type { PommentCore } from '../core';
+import type { AdminAuth, PommentCore } from '../core';
 import type { CreateAdminPostInput, CreateUserPostInput, ImportThreadInput, Post } from '../core/domain/post';
 import type { Thread } from '../core/domain/thread';
-import { NotFoundError } from '../core/errors';
-import { readJson } from './body';
+import {
+  ForbiddenError,
+  NotFoundError,
+  ServiceUnavailableError,
+  TooManyRequestsError,
+  UnauthorizedError,
+} from '../core/errors';
+import { readJson, readJsonLimited } from './body';
 import { matchPath } from './params';
 import { jsonError, jsonSuccess, text } from './responses';
 
@@ -12,14 +18,62 @@ interface Route {
   method: string;
   path: string;
   handler: Handler;
+  publicAdmin?: boolean;
 }
 
-export function createHandler(core: PommentCore): (request: Request) => Promise<Response> {
+export interface RequestContext {
+  clientIp: string | null;
+}
+
+export type AdminAuthEvent = 'login-success' | 'login-rate-limited' | 'logout' | 'unavailable';
+
+export interface HandlerOptions {
+  adminAuth?: AdminAuth;
+  adminOrigin?: string;
+  secureAdminCookie?: boolean;
+  onAdminAuthEvent?: (event: AdminAuthEvent, clientIp: string | null) => void;
+}
+
+const ADMIN_COOKIE = 'pomment_admin_session';
+
+export function createHandler(
+  core: PommentCore,
+  options: HandlerOptions = {},
+): (request: Request, context?: RequestContext) => Promise<Response> {
   const routes: Route[] = [
     {
       method: 'GET',
       path: '/health',
       handler: async () => jsonSuccess(null),
+    },
+    {
+      method: 'POST',
+      path: '/admin/login',
+      publicAdmin: true,
+      handler: async request => {
+        const body = await readJsonLimited<{ password?: unknown }>(request, 4096);
+        const clientIp = requestContext.get(request)?.clientIp;
+        if (!clientIp) {
+          throw new ServiceUnavailableError('client IP unavailable');
+        }
+        const result = await options.adminAuth!.login(body.password, clientIp);
+        const response = jsonSuccess(null);
+        response.headers.append('set-cookie', sessionCookie(result.token, result.expiresAt, options.secureAdminCookie !== false));
+        options.onAdminAuthEvent?.('login-success', clientIp);
+        return response;
+      },
+    },
+    {
+      method: 'POST',
+      path: '/admin/logout',
+      handler: async request => {
+        const clientIp = requestContext.get(request)?.clientIp ?? null;
+        await options.adminAuth!.logout(readCookie(request, ADMIN_COOKIE));
+        const response = jsonSuccess(null);
+        response.headers.append('set-cookie', clearSessionCookie(options.secureAdminCookie !== false));
+        options.onAdminAuthEvent?.('logout', clientIp);
+        return response;
+      },
     },
     {
       method: 'GET',
@@ -132,7 +186,9 @@ export function createHandler(core: PommentCore): (request: Request) => Promise<
     },
   ];
 
-  return async request => {
+  return async (request, context = { clientIp: null }) => {
+    requestContext.set(request, context);
+    const pathname = new URL(request.url).pathname;
     try {
       const url = new URL(request.url);
 
@@ -143,13 +199,89 @@ export function createHandler(core: PommentCore): (request: Request) => Promise<
 
         const matched = matchPath(route.path, url.pathname);
         if (matched) {
-          return await route.handler(request, matched.params);
+          if (route.path.startsWith('/admin/')) {
+            if (!options.adminAuth || !options.adminOrigin) {
+              throw new ServiceUnavailableError('admin authentication is not configured');
+            }
+            if (!route.publicAdmin && !(await options.adminAuth.authenticate(readCookie(request, ADMIN_COOKIE)))) {
+              throw new UnauthorizedError();
+            }
+            if (isUnsafeMethod(request.method) && request.headers.get('origin') !== options.adminOrigin) {
+              throw new ForbiddenError('invalid origin');
+            }
+          }
+          return withAdminHeaders(await route.handler(request, matched.params), pathname);
         }
       }
 
       throw new NotFoundError('route not found');
     } catch (error) {
-      return jsonError(error);
+      if (pathname.startsWith('/admin/') && error instanceof ServiceUnavailableError) {
+        options.onAdminAuthEvent?.('unavailable', context.clientIp);
+      }
+      if (pathname === '/admin/login' && error instanceof TooManyRequestsError) {
+        options.onAdminAuthEvent?.('login-rate-limited', context.clientIp);
+      }
+      return withAdminHeaders(jsonError(error), pathname);
+    } finally {
+      requestContext.delete(request);
     }
   };
+}
+
+const requestContext = new WeakMap<Request, RequestContext>();
+
+function readCookie(request: Request, name: string): string | null {
+  const cookies = request.headers.get('cookie');
+  if (!cookies) {
+    return null;
+  }
+  for (const part of cookies.split(';')) {
+    const separator = part.indexOf('=');
+    if (separator !== -1 && part.slice(0, separator).trim() === name) {
+      return part.slice(separator + 1).trim();
+    }
+  }
+  return null;
+}
+
+function sessionCookie(token: string, expiresAt: number, secure: boolean): string {
+  const attributes = [
+    `${ADMIN_COOKIE}=${token}`,
+    'Path=/admin',
+    'HttpOnly',
+    'SameSite=Strict',
+    `Max-Age=${24 * 60 * 60}`,
+    `Expires=${new Date(expiresAt).toUTCString()}`,
+  ];
+  if (secure) {
+    attributes.push('Secure');
+  }
+  return attributes.join('; ');
+}
+
+function clearSessionCookie(secure: boolean): string {
+  const attributes = [
+    `${ADMIN_COOKIE}=`,
+    'Path=/admin',
+    'HttpOnly',
+    'SameSite=Strict',
+    'Max-Age=0',
+    'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+  ];
+  if (secure) {
+    attributes.push('Secure');
+  }
+  return attributes.join('; ');
+}
+
+function isUnsafeMethod(method: string): boolean {
+  return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+}
+
+function withAdminHeaders(response: Response, pathname: string): Response {
+  if (pathname.startsWith('/admin/')) {
+    response.headers.set('cache-control', 'no-store');
+  }
+  return response;
 }

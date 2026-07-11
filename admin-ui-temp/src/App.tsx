@@ -27,10 +27,9 @@ import {
   SettingIcon,
   UserCircleIcon,
 } from 'tdesign-icons-react';
-import { api } from './api';
+import { ApiError, api, setUnauthorizedHandler } from './api';
 import type { AdminIdentity, Post, Thread } from './types';
 
-const AUTH_KEY = 'pomment-admin-auth';
 const IDENTITY_KEY = 'pomment-admin-identity';
 
 function readIdentity(): AdminIdentity {
@@ -45,18 +44,24 @@ function formatDate(value: number): string {
   return value ? new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(value) : '-';
 }
 
-function LoginPage({ onLogin }: { onLogin: () => void }) {
-  const [username, setUsername] = useState('');
+function LoginPage({ onLogin }: { onLogin: (password: string) => Promise<void> }) {
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!username.trim() || !password) {
-      void MessagePlugin.warning('请输入账号和密码');
+    if (!password) {
+      void MessagePlugin.warning('请输入密码');
       return;
     }
-    localStorage.setItem(AUTH_KEY, 'true');
-    onLogin();
+    setLoading(true);
+    try {
+      await onLogin(password);
+    } catch (error) {
+      void MessagePlugin.error(error instanceof ApiError && error.status === 401 ? '密码错误' : '登录服务暂时不可用');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -68,21 +73,18 @@ function LoginPage({ onLogin }: { onLogin: () => void }) {
           <h1>让每一条讨论<br />都保持清晰。</h1>
           <p>审阅评论、管理可见性，并以管理员身份继续对话。</p>
         </div>
-        <div className="login-status"><span /> API authentication pending</div>
+        <div className="login-status is-ready"><span /> Secure session authentication</div>
       </section>
       <section className="login-panel">
         <Card className="login-card" bordered={false}>
           <Tag theme="primary" variant="light">ADMIN ACCESS</Tag>
           <h2>欢迎回来</h2>
-          <p className="muted">当前为本地占位登录，任意非空账号均可进入。</p>
+          <p className="muted">请输入管理员密码以创建安全会话。</p>
           <Form layout="vertical" onSubmit={() => undefined}>
-            <Form.FormItem label="账号">
-              <Input value={username} onChange={setUsername} placeholder="admin" size="large" />
-            </Form.FormItem>
             <Form.FormItem label="密码">
               <Input type="password" value={password} onChange={setPassword} placeholder="请输入密码" size="large" />
             </Form.FormItem>
-            <Button theme="primary" size="large" block onClick={submit}>进入管理台</Button>
+            <Button theme="primary" size="large" block loading={loading} onClick={submit}>进入管理台</Button>
           </Form>
         </Card>
       </section>
@@ -90,7 +92,7 @@ function LoginPage({ onLogin }: { onLogin: () => void }) {
   );
 }
 
-function AdminShell({ children, onLogout }: { children: ReactNode; onLogout: () => void }) {
+function AdminShell({ children, onLogout }: { children: ReactNode; onLogout: () => Promise<void> }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [identityOpen, setIdentityOpen] = useState(false);
@@ -123,7 +125,7 @@ function AdminShell({ children, onLogout }: { children: ReactNode; onLogout: () 
           <div><strong>{identity.name || '未设置身份'}</strong><span>{identity.email || '回复前需要设置'}</span></div>
           <Button shape="square" variant="text" onClick={() => setIdentityOpen(true)}><EditIcon /></Button>
         </div>
-        <Button variant="text" className="logout" onClick={onLogout}><LogoutIcon /> 退出登录</Button>
+        <Button variant="text" className="logout" onClick={() => void onLogout()}><LogoutIcon /> 退出登录</Button>
       </Layout.Aside>
       <Layout.Content className="main-content">{children}</Layout.Content>
       <Dialog header="管理员回复身份" visible={identityOpen} onClose={() => setIdentityOpen(false)} onConfirm={saveIdentity} confirmBtn="保存到本机">
@@ -302,11 +304,53 @@ function ThreadPage() {
 }
 
 export default function App() {
-  const [authenticated, setAuthenticated] = useState(() => localStorage.getItem(AUTH_KEY) === 'true');
+  const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'anonymous' | 'unavailable'>('checking');
 
-  if (!authenticated) return <LoginPage onLogin={() => setAuthenticated(true)} />;
+  async function checkSession() {
+    setAuthState('checking');
+    try {
+      await api.health();
+      setAuthState('authenticated');
+    } catch (error) {
+      setAuthState(error instanceof ApiError && error.status === 401 ? 'anonymous' : 'unavailable');
+    }
+  }
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      void api.health().catch(error => {
+        if (error instanceof ApiError && error.status === 401) {
+          setAuthState('anonymous');
+        }
+      });
+    });
+    void checkSession();
+    return () => setUnauthorizedHandler(undefined);
+  }, []);
+
+  if (authState === 'checking') {
+    return <main className="auth-state"><Loading loading><span>正在验证管理会话...</span></Loading></main>;
+  }
+  if (authState === 'unavailable') {
+    return <main className="auth-state"><Card bordered={false}><h2>管理服务暂时不可用</h2><p className="muted">认证存储或服务配置当前不可用，请稍后重试。</p><Button theme="primary" onClick={() => void checkSession()}>重试</Button></Card></main>;
+  }
+  if (authState === 'anonymous') {
+    return <LoginPage onLogin={async password => { await api.login(password); setAuthState('authenticated'); }} />;
+  }
+
   return (
-    <AdminShell onLogout={() => { localStorage.removeItem(AUTH_KEY); setAuthenticated(false); }}>
+    <AdminShell onLogout={async () => {
+      try {
+        await api.logout();
+        setAuthState('anonymous');
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          setAuthState('anonymous');
+        } else {
+          void MessagePlugin.error('注销失败，请稍后重试');
+        }
+      }
+    }}>
       <Routes>
         <Route path="/threads" element={<ThreadsPage />} />
         <Route path="/threads/:id" element={<ThreadPage />} />

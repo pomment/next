@@ -6,7 +6,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/admin': 'http://localhost:8080',
+      '/admin': {
+        target: 'http://127.0.0.1:8080',
+        headers: { 'X-Real-IP': '127.0.0.1' },
+      },
     },
   },
 });

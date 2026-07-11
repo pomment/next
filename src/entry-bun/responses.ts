@@ -1,4 +1,4 @@
-import { PommentError } from '../core/errors';
+import { PommentError, TooManyRequestsError } from '../core/errors';
 
 export interface ApiResponse<T> {
   code: number;
@@ -11,7 +11,11 @@ export function jsonSuccess<T>(data: T): Response {
 
 export function jsonError(error: unknown): Response {
   if (error instanceof PommentError) {
-    return json({ code: error.status, data: null }, error.status);
+    const response = json({ code: error.status, data: null }, error.status);
+    if (error instanceof TooManyRequestsError) {
+      response.headers.set('retry-after', String(error.retryAfterSeconds));
+    }
+    return response;
   }
 
   return json({ code: 500, data: null }, 500);
