@@ -3,8 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "admin-ui-temp"
+  ],
   "scripts": {
     "dev": "bun run src/entry-bun/server.ts",
+    "admin:dev": "bun run --cwd admin-ui-temp dev",
+    "admin:build": "bun run --cwd admin-ui-temp build",
+    "admin:preview": "bun run --cwd admin-ui-temp preview",
     "test": "bun test",
     "test:smoke": "bun run e2e/smoke.ts",
     "typecheck": "tsc --noEmit"
@@ -12,5 +18,6 @@
   "devDependencies": {
     "bun-types": "latest",
     "typescript": "^5.9.3"
-  }
+  },
+  "packageManager": "bun@1.3.14"
 }

@@ -19,6 +19,15 @@ bun run typecheck
 bun run dev
 ```
 
+The temporary admin UI is the `admin-ui-temp` package in the Bun workspace:
+
+```sh
+bun install
+bun run admin:dev
+```
+
+During development, Vite proxies `/admin` API requests to the Bun entry at `http://localhost:8080`.
+
 The Bun entry listens on `PORT` or `8080`, and stores data in `POMMENT_DB` or `pomment.db`.
 
 ## Implemented Routes
