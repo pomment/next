@@ -498,7 +498,7 @@ td a {
   border-radius: 0 0 10px 10px;
   border-top: 1px solid #f0f2f5;
 }
-.comment-actions label {
+.comment-actions > div:last-child {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -600,7 +600,7 @@ td a {
   gap: 14px 28px;
   padding: 6px 0 26px;
 }
-.toggle-grid label {
+.toggle-grid > div {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -816,7 +816,7 @@ td a {
     flex-direction: column;
     align-items: stretch;
   }
-  .comment-actions label {
+  .comment-actions > div:last-child {
     align-self: flex-end;
   }
   .comment-author time {
