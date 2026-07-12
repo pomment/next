@@ -1,25 +1,28 @@
 import { createHash } from 'node:crypto';
 import { createInterface } from 'node:readline/promises';
 import { Writable } from 'node:stream';
-import type {
-  ApiResponse,
-} from './responses';
-import type {
-  BackupImportSession,
-  CompleteBackupImportResult,
-  StartBackupImportResult,
-} from '../core';
+import type { ApiResponse } from './responses';
+import type { BackupImportSession, CompleteBackupImportResult, StartBackupImportResult } from '../core';
 import { exportBunSqliteBackup, scanBunBackup } from '../runtime-bun';
 
 const [command, ...args] = Bun.argv.slice(2);
 
 try {
   switch (command) {
-    case 'export': await exportCommand(args); break;
-    case 'verify': await verifyCommand(args); break;
-    case 'import': await importCommand(args); break;
-    case 'abort': await abortCommand(args); break;
-    default: throw new Error(usage());
+    case 'export':
+      await exportCommand(args);
+      break;
+    case 'verify':
+      await verifyCommand(args);
+      break;
+    case 'import':
+      await importCommand(args);
+      break;
+    case 'abort':
+      await abortCommand(args);
+      break;
+    default:
+      throw new Error(usage());
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : 'Backup command failed');
@@ -31,7 +34,7 @@ async function exportCommand(args: string[]): Promise<void> {
   const databasePath = requiredOption(parsed, 'db');
   const outputPath = requiredOption(parsed, 'output');
   if (parsed.positionals.length !== 0) throw new Error(usage());
-  const packageJson = await Bun.file(new URL('../../package.json', import.meta.url)).json() as { version: string };
+  const packageJson = (await Bun.file(new URL('../../package.json', import.meta.url)).json()) as { version: string };
   const result = await exportBunSqliteBackup({ databasePath, outputPath, generatorVersion: packageJson.version });
   console.log(JSON.stringify({ outputPath, manifest: result.manifest, trailer: result.trailer }, null, 2));
 }
@@ -90,7 +93,10 @@ async function importCommand(args: string[]): Promise<void> {
     onDataRecord: async (_record, line) => {
       const lineBytes = Buffer.byteLength(line, 'utf8') + 1;
       if (lineBytes > session.maxRecordBytes) throw new Error('Backup contains a record larger than the target limit');
-      if (lines.length > 0 && (lines.length >= session.maxRecordsPerBatch || bytes + lineBytes > session.maxBytesPerBatch)) {
+      if (
+        lines.length > 0 &&
+        (lines.length >= session.maxRecordsPerBatch || bytes + lineBytes > session.maxBytesPerBatch)
+      ) {
         await flush();
       }
       lines.push(line);
@@ -141,7 +147,8 @@ function parseArgs(args: string[], optionNames: string[], flagNames: string[] = 
       flags.add(name);
       continue;
     }
-    if (!optionNames.includes(name) || index + 1 >= args.length || args[index + 1].startsWith('--')) throw new Error(usage());
+    if (!optionNames.includes(name) || index + 1 >= args.length || args[index + 1].startsWith('--'))
+      throw new Error(usage());
     options.set(name, args[++index]);
   }
   return { options, flags, positionals };
@@ -155,7 +162,8 @@ function requiredOption(parsed: ParsedArgs, name: string): string {
 
 function targetUrl(value: string, insecure: boolean): URL {
   const url = new URL(value);
-  if (url.origin !== value.replace(/\/$/, '') || url.pathname !== '/') throw new Error('--url must be an exact origin without a path');
+  if (url.origin !== value.replace(/\/$/, '') || url.pathname !== '/')
+    throw new Error('--url must be an exact origin without a path');
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && insecure)) {
     throw new Error('HTTP targets require --insecure');
   }
@@ -177,7 +185,11 @@ async function login(target: URL): Promise<string> {
 
 async function readPassword(): Promise<string> {
   if (!process.stdin.isTTY) throw new Error('Password input requires an interactive terminal');
-  const muted = new Writable({ write(_chunk, _encoding, callback) { callback(); } });
+  const muted = new Writable({
+    write(_chunk, _encoding, callback) {
+      callback();
+    },
+  });
   const readline = createInterface({ input: process.stdin, output: muted, terminal: true });
   try {
     process.stderr.write('Admin password: ');
@@ -196,7 +208,7 @@ async function api<T>(target: URL, cookie: string, path: string, init: RequestIn
   const response = await fetch(new URL(path, target), { ...init, headers });
   let envelope: ApiResponse<T> | undefined;
   try {
-    envelope = await response.json() as ApiResponse<T>;
+    envelope = (await response.json()) as ApiResponse<T>;
   } catch {
     throw new Error(`Backup API returned invalid JSON with HTTP ${response.status}`);
   }
@@ -206,7 +218,9 @@ async function api<T>(target: URL, cookie: string, path: string, init: RequestIn
 
 function printWarnings(warnings: Array<{ type: string; count: number; threadIds: number[] }>): void {
   for (const warning of warnings) {
-    console.error(`Warning: ${warning.type} mismatch in ${warning.count} thread(s); examples: ${warning.threadIds.join(', ')}`);
+    console.error(
+      `Warning: ${warning.type} mismatch in ${warning.count} thread(s); examples: ${warning.threadIds.join(', ')}`,
+    );
   }
 }
 

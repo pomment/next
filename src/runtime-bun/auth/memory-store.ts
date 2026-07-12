@@ -1,9 +1,4 @@
-import type {
-  AdminSession,
-  AdminSessionStore,
-  LoginAttemptResult,
-  LoginAttemptStore,
-} from '../../core';
+import type { AdminSession, AdminSessionStore, LoginAttemptResult, LoginAttemptStore } from '../../core';
 
 interface AttemptWindow {
   count: number;
@@ -52,9 +47,10 @@ export class MemoryAdminAuthStore implements AdminSessionStore, LoginAttemptStor
     const now = this.now();
     this.sweepAttempts(now);
     const current = this.attempts.get(key);
-    const next = !current || current.expiresAt <= now
-      ? { count: 1, expiresAt: now + windowMs }
-      : { ...current, count: current.count + 1 };
+    const next =
+      !current || current.expiresAt <= now
+        ? { count: 1, expiresAt: now + windowMs }
+        : { ...current, count: current.count + 1 };
     this.attempts.set(key, next);
     return {
       allowed: next.count <= limit,

@@ -242,7 +242,7 @@
               "description": ""
             }
           ],
-           "body": {
+          "body": {
             "contentType": "application/json",
             "body": "{\n  \"url\": \"https://example.com/hello-world\",\n  \"title\": \"Hello World\",\n  \"parent\": 0,\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"website\": \"https://alice.example.com\",\n  \"content\": \"This is a test comment.\",\n  \"receiveEmail\": false\n}"
           },
@@ -398,7 +398,7 @@
               "description": ""
             }
           ],
-           "body": {
+          "body": {
             "contentType": "application/json",
             "body": "{\n  \"id\": <<threadId>>,\n  \"title\": \"Updated Title\",\n  \"url\": \"https://example.com/hello-world\",\n  \"locked\": false\n}"
           },
@@ -463,7 +463,7 @@
               "description": ""
             }
           ],
-           "body": {
+          "body": {
             "contentType": "application/json",
             "body": "{\n  \"name\": \"Admin\",\n  \"email\": \"admin@example.com\",\n  \"parent\": 0,\n  \"content\": \"Official reply from admin.\"\n}"
           },
@@ -491,7 +491,7 @@
               "description": ""
             }
           ],
-           "body": {
+          "body": {
             "contentType": "application/json",
             "body": "{\n  \"id\": <<postId>>,\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"website\": \"\",\n  \"content\": \"Edited comment content.\",\n  \"hidden\": false,\n  \"receiveEmail\": false,\n  \"byAdmin\": false\n}"
           },
@@ -530,7 +530,7 @@
       "currentValue": "http://127.0.0.1:8080",
       "secret": false
     },
-     {
+    {
       "key": "threadId",
       "initialValue": "1",
       "currentValue": "1",

@@ -63,7 +63,7 @@ export class PommentCore {
     const posts = await this.deps.storage.listPosts(threadId);
     return {
       meta: thread,
-      post: posts.filter(post => !post.hidden).map(toPublicPost),
+      post: posts.filter((post) => !post.hidden).map(toPublicPost),
     };
   }
 
@@ -95,7 +95,7 @@ export class PommentCore {
     this.validateUserPostInput(input);
 
     let createdThread: Thread | null = null;
-    const post = await this.deps.storage.transaction(async storage => {
+    const post = await this.deps.storage.transaction(async (storage) => {
       let thread = await storage.getThreadByUrl(input.url);
       if (!thread) {
         thread = {
@@ -137,14 +137,18 @@ export class PommentCore {
       return post;
     });
 
-    await this.jobs.dispatch('post.created', { post, thread: createdThread, challengeResponse: input.challengeResponse });
+    await this.jobs.dispatch('post.created', {
+      post,
+      thread: createdThread,
+      challengeResponse: input.challengeResponse,
+    });
     return post;
   }
 
   async createAdminPost(input: CreateAdminPostInput): Promise<Post> {
     this.validateAdminPostInput(input);
 
-    return this.deps.storage.transaction(async storage => {
+    return this.deps.storage.transaction(async (storage) => {
       const thread = await storage.getThreadById(input.threadId);
       if (!thread) {
         throw new NotFoundError('thread not found');
@@ -179,7 +183,7 @@ export class PommentCore {
   async editPost(input: EditPostInput): Promise<Post> {
     this.validateAdminEditPostInput(input);
 
-    return this.deps.storage.transaction(async storage => {
+    return this.deps.storage.transaction(async (storage) => {
       const existing = await storage.getPost(input.threadId, input.id);
       if (!existing) {
         throw new NotFoundError('unable to find post');
@@ -189,9 +193,8 @@ export class PommentCore {
         ...existing,
         name: input.name,
         email: input.email,
-        emailHashed: input.email === existing.email
-          ? existing.emailHashed
-          : await hashEmail(input.email, this.config.avatarHash),
+        emailHashed:
+          input.email === existing.email ? existing.emailHashed : await hashEmail(input.email, this.config.avatarHash),
         website: sanitizeWebsite(input.website),
         content: input.content,
         hidden: input.hidden,
@@ -207,7 +210,7 @@ export class PommentCore {
   }
 
   async refreshThreadMeta(threadId: number): Promise<Thread> {
-    return this.deps.storage.transaction(storage => this.refreshThreadMetaWithStorage(storage, threadId));
+    return this.deps.storage.transaction((storage) => this.refreshThreadMetaWithStorage(storage, threadId));
   }
 
   async refreshAllThreadMeta(): Promise<void> {
@@ -227,7 +230,7 @@ export class PommentCore {
       throw new ValidationError('thread URL must be a valid http or https URL');
     }
 
-    return this.deps.storage.transaction(async storage => {
+    return this.deps.storage.transaction(async (storage) => {
       const thread = await storage.getThreadById(input.id);
       if (!thread) {
         throw new NotFoundError('thread not found');
@@ -255,8 +258,8 @@ export class PommentCore {
     }
 
     const posts = await storage.listPosts(threadId);
-    const visiblePosts = posts.filter(post => !post.hidden);
-    const createdAtValues = posts.map(post => post.createdAt);
+    const visiblePosts = posts.filter((post) => !post.hidden);
+    const createdAtValues = posts.map((post) => post.createdAt);
     const updated: Thread = {
       ...thread,
       amount: visiblePosts.length,
@@ -271,7 +274,7 @@ export class PommentCore {
   async importThread(input: ImportThreadInput): Promise<ImportThreadResult> {
     this.validateImportInput(input);
 
-    const { threadId, postCount } = await this.deps.storage.transaction(async storage => {
+    const { threadId, postCount } = await this.deps.storage.transaction(async (storage) => {
       const existing = await storage.getThreadByUrl(input.thread.url);
       let threadId: number;
       if (existing) {
@@ -387,23 +390,33 @@ export class PommentCore {
   }
 
   private validateAdminEditPostInput(input: EditPostInput): void {
-    if (!Number.isSafeInteger(input.id) || input.id <= 0
-      || typeof input.name !== 'string' || !input.name.trim()
-      || typeof input.email !== 'string' || !input.email.trim()
-      || typeof input.website !== 'string'
-      || typeof input.content !== 'string' || !input.content.trim()
-      || typeof input.hidden !== 'boolean'
-      || typeof input.receiveEmail !== 'boolean'
-      || typeof input.byAdmin !== 'boolean') {
+    if (
+      !Number.isSafeInteger(input.id) ||
+      input.id <= 0 ||
+      typeof input.name !== 'string' ||
+      !input.name.trim() ||
+      typeof input.email !== 'string' ||
+      !input.email.trim() ||
+      typeof input.website !== 'string' ||
+      typeof input.content !== 'string' ||
+      !input.content.trim() ||
+      typeof input.hidden !== 'boolean' ||
+      typeof input.receiveEmail !== 'boolean' ||
+      typeof input.byAdmin !== 'boolean'
+    ) {
       throw new ValidationError('invalid admin comment fields');
     }
   }
 
   private validateUpdateThreadInput(input: UpdateThreadInput): void {
-    if (!Number.isSafeInteger(input.id) || input.id <= 0
-      || typeof input.title !== 'string' || !input.title.trim()
-      || typeof input.url !== 'string'
-      || typeof input.locked !== 'boolean') {
+    if (
+      !Number.isSafeInteger(input.id) ||
+      input.id <= 0 ||
+      typeof input.title !== 'string' ||
+      !input.title.trim() ||
+      typeof input.url !== 'string' ||
+      typeof input.locked !== 'boolean'
+    ) {
       throw new ValidationError('invalid thread fields');
     }
   }

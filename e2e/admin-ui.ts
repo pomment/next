@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { chromium, type Browser, type Page } from 'playwright';
 
 const password = 'correct horse battery staple';
-const passwordHash = '$argon2id$v=19$m=65536,t=2,p=1$tyQOWKNcs1KKzWRKY7mxeybWiZipXV0MCRqTWswH3vI$hc3lPY7HeprGEZNECMxEAXlCG1g8+XD1jrb/lVeBYno';
+const passwordHash =
+  '$argon2id$v=19$m=65536,t=2,p=1$tyQOWKNcs1KKzWRKY7mxeybWiZipXV0MCRqTWswH3vI$hc3lPY7HeprGEZNECMxEAXlCG1g8+XD1jrb/lVeBYno';
 const port = 18000 + Math.floor(Math.random() * 10000);
 const origin = `http://127.0.0.1:${port}`;
 const directory = mkdtempSync(join(tmpdir(), 'pomment-admin-e2e-'));
@@ -62,7 +63,7 @@ try {
     extraHTTPHeaders: { 'X-Real-IP': '127.0.0.1' },
   });
   const page = await context.newPage();
-  page.on('pageerror', error => pageErrors.push(error));
+  page.on('pageerror', (error) => pageErrors.push(error));
   await login(page);
 
   await page.getByRole('button', { name: '管理员身份' }).click();
@@ -73,7 +74,9 @@ try {
   await page.getByText('E2E Thread', { exact: true }).first().click();
   await page.getByText('First comment', { exact: true }).waitFor();
   await page.getByRole('button', { name: '回复树' }).click();
-  if (!await page.getByRole('button', { name: '回复树' }).evaluate(element => element.classList.contains('active'))) {
+  if (
+    !(await page.getByRole('button', { name: '回复树' }).evaluate((element) => element.classList.contains('active')))
+  ) {
     throw new Error('tree view did not become active');
   }
 
@@ -88,10 +91,13 @@ try {
   const postInputs = page.locator('.form-card input');
   await postInputs.nth(1).fill('alice+edited@example.com');
   await page.locator('.form-card textarea').fill('Edited first comment');
-  const updateResponsePromise = page.waitForResponse(response => response.request().method() === 'PUT' && response.url().includes('/api/admin/posts/'));
+  const updateResponsePromise = page.waitForResponse(
+    (response) => response.request().method() === 'PUT' && response.url().includes('/api/admin/posts/'),
+  );
   await page.getByRole('button', { name: '保存修改' }).click();
   const updateResponse = await updateResponsePromise;
-  if (!updateResponse.ok()) throw new Error(`post edit failed (${updateResponse.status()}): ${await updateResponse.text()}`);
+  if (!updateResponse.ok())
+    throw new Error(`post edit failed (${updateResponse.status()}): ${await updateResponse.text()}`);
   await page.waitForURL(new RegExp(`/admin/threads/${thread.id}$`));
   await page.getByText('Edited first comment', { exact: true }).waitFor();
 
@@ -112,13 +118,15 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await page.getByText('Edited first comment', { exact: true }).waitFor();
-  const overflow = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('*'))
-    .filter(element => {
-      const bounds = element.getBoundingClientRect();
-      return bounds.right > window.innerWidth + 1 || bounds.left < -1;
-    })
-    .slice(0, 8)
-    .map(element => `${element.tagName.toLowerCase()}.${element.className}`));
+  const overflow = await page.evaluate(() =>
+    Array.from(document.querySelectorAll<HTMLElement>('*'))
+      .filter((element) => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.right > window.innerWidth + 1 || bounds.left < -1;
+      })
+      .slice(0, 8)
+      .map((element) => `${element.tagName.toLowerCase()}.${element.className}`),
+  );
   if (overflow.length) throw new Error(`admin thread page overflows the mobile viewport: ${overflow.join(', ')}`);
 
   const lockedPost = await fetch(`${origin}/api/public/posts/add`, {
@@ -133,7 +141,7 @@ try {
     }),
   });
   if (lockedPost.status !== 403) throw new Error(`locked thread accepted a public post (${lockedPost.status})`);
-  if (pageErrors.length) throw new Error(`browser errors: ${pageErrors.map(error => error.message).join('; ')}`);
+  if (pageErrors.length) throw new Error(`browser errors: ${pageErrors.map((error) => error.message).join('; ')}`);
 
   console.log('Admin UI full-stack E2E passed');
 } catch (error) {
@@ -171,7 +179,7 @@ async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: init?.body ? { 'content-type': 'application/json', ...init.headers } : init?.headers,
   });
-  const payload = await response.json() as { code: number; data: T };
+  const payload = (await response.json()) as { code: number; data: T };
   if (!response.ok || payload.code !== 200) throw new Error(`${path} failed (${response.status})`);
   return payload.data;
 }

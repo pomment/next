@@ -67,9 +67,7 @@ async function serveAdminUi(request: Request, pathname: string): Promise<Respons
     if (filePath.startsWith(`${adminUiDirectory}${sep}`)) {
       const file = Bun.file(filePath);
       if (await file.exists()) {
-        const cacheControl = relativePath.startsWith('assets/')
-          ? 'public, max-age=31536000, immutable'
-          : 'no-cache';
+        const cacheControl = relativePath.startsWith('assets/') ? 'public, max-age=31536000, immutable' : 'no-cache';
         return request.method === 'HEAD'
           ? new Response(null, { headers: { 'content-type': file.type, 'cache-control': cacheControl } })
           : new Response(file, { headers: { 'cache-control': cacheControl } });
@@ -86,12 +84,14 @@ async function serveAdminUi(request: Request, pathname: string): Promise<Respons
 }
 
 function isAdminUiPath(pathname: string): boolean {
-  return pathname === '/admin'
-    || pathname === '/admin/'
-    || pathname === '/admin/index.html'
-    || pathname === '/admin/threads'
-    || pathname.startsWith('/admin/threads/')
-    || pathname.startsWith('/admin/assets/');
+  return (
+    pathname === '/admin' ||
+    pathname === '/admin/' ||
+    pathname === '/admin/index.html' ||
+    pathname === '/admin/threads' ||
+    pathname.startsWith('/admin/threads/') ||
+    pathname.startsWith('/admin/assets/')
+  );
 }
 
 async function createAdminAuth(): Promise<AdminAuth | undefined> {
@@ -104,11 +104,12 @@ async function createAdminAuth(): Promise<AdminAuth | undefined> {
 
   try {
     const passwordVerifier = new BunAdminPasswordVerifier(passwordHash);
-    const store = storeName === 'memory'
-      ? new MemoryAdminAuthStore()
-      : storeName === 'redis' && Bun.env.POMMENT_REDIS_URL
-        ? new RedisAdminAuthStore(Bun.env.POMMENT_REDIS_URL)
-        : undefined;
+    const store =
+      storeName === 'memory'
+        ? new MemoryAdminAuthStore()
+        : storeName === 'redis' && Bun.env.POMMENT_REDIS_URL
+          ? new RedisAdminAuthStore(Bun.env.POMMENT_REDIS_URL)
+          : undefined;
     if (!store) {
       console.warn('Admin routes disabled: session store must be memory or redis with POMMENT_REDIS_URL');
       return undefined;
@@ -144,5 +145,5 @@ function parseAdminOrigin(value: string | undefined): string | undefined {
 
 async function sha256(value: string): Promise<string> {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }

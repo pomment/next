@@ -26,7 +26,7 @@ export class BunAdminPasswordVerifier implements AdminPasswordVerifier {
       this.active++;
       return;
     }
-    await new Promise<void>(resolve => this.waiters.push(resolve));
+    await new Promise<void>((resolve) => this.waiters.push(resolve));
     this.active++;
   }
 

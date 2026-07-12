@@ -30,8 +30,12 @@ export interface BunSqliteBackupExportResult {
   trailer: BackupTrailerV1;
 }
 
-interface CountRow { count: number }
-interface SequenceRow { seq: number }
+interface CountRow {
+  count: number;
+}
+interface SequenceRow {
+  seq: number;
+}
 
 export async function exportBunSqliteBackup(
   options: BunSqliteBackupExportOptions,
@@ -52,9 +56,11 @@ export async function exportBunSqliteBackup(
     const threadCount = db.query<CountRow, []>('SELECT COUNT(*) AS count FROM threads').get()!.count;
     const postCount = db.query<CountRow, []>('SELECT COUNT(*) AS count FROM posts').get()!.count;
     const sequence = db
-      .query<SequenceRow & { name: string }, []>("SELECT name, seq FROM sqlite_sequence WHERE name IN ('threads', 'posts')")
+      .query<SequenceRow & { name: string }, []>(
+        "SELECT name, seq FROM sqlite_sequence WHERE name IN ('threads', 'posts')",
+      )
       .all();
-    const sequenceByName = new Map(sequence.map(row => [row.name, row.seq]));
+    const sequenceByName = new Map(sequence.map((row) => [row.name, row.seq]));
     const manifest: BackupManifestV1 = {
       type: 'manifest',
       formatVersion: BACKUP_FORMAT_VERSION,
@@ -79,7 +85,9 @@ export async function exportBunSqliteBackup(
       yield emitData(serializeBackupManifestV1(manifest));
       let lastThreadId = 0;
       while (true) {
-        const rows = db.query<ThreadRow, [number, number]>('SELECT * FROM threads WHERE id > ? ORDER BY id ASC LIMIT ?').all(lastThreadId, pageSize);
+        const rows = db
+          .query<ThreadRow, [number, number]>('SELECT * FROM threads WHERE id > ? ORDER BY id ASC LIMIT ?')
+          .all(lastThreadId, pageSize);
         if (rows.length === 0) break;
         for (const row of rows) {
           lastThreadId = row.id;
@@ -89,11 +97,15 @@ export async function exportBunSqliteBackup(
 
       let lastPostId = 0;
       while (true) {
-        const rows = db.query<PostRow, [number, number]>('SELECT * FROM posts WHERE id > ? ORDER BY id ASC LIMIT ?').all(lastPostId, pageSize);
+        const rows = db
+          .query<PostRow, [number, number]>('SELECT * FROM posts WHERE id > ? ORDER BY id ASC LIMIT ?')
+          .all(lastPostId, pageSize);
         if (rows.length === 0) break;
         for (const row of rows) {
           lastPostId = row.id;
-          yield emitData(serializeBackupPostRecordV1({ type: 'post', threadId: row.thread_id, data: postFromRow(row) }));
+          yield emitData(
+            serializeBackupPostRecordV1({ type: 'post', threadId: row.thread_id, data: postFromRow(row) }),
+          );
         }
       }
 

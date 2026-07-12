@@ -93,7 +93,8 @@ export async function scanBunBackup(path: string, options: BunBackupScanOptions 
       postCount++;
       summary.postCount++;
       if (!record.data.hidden) summary.visiblePostCount++;
-      if (summary.postCount === 1 || record.data.createdAt < summary.firstPostAt) summary.firstPostAt = record.data.createdAt;
+      if (summary.postCount === 1 || record.data.createdAt < summary.firstPostAt)
+        summary.firstPostAt = record.data.createdAt;
       if (record.data.createdAt > summary.latestPostAt) summary.latestPostAt = record.data.createdAt;
       hash.update(lineBytes);
       hash.update('\n');
@@ -110,7 +111,8 @@ export async function scanBunBackup(path: string, options: BunBackupScanOptions 
   if (!trailer) throw new BackupValidationError('trailer is missing');
   if (threadCount !== manifest.threadCount) throw new BackupValidationError('thread count does not match manifest');
   if (postCount !== manifest.postCount) throw new BackupValidationError('post count does not match manifest');
-  if (lastThreadId > manifest.threadIdHighWaterMark) throw new BackupValidationError('thread ID exceeds high-water mark');
+  if (lastThreadId > manifest.threadIdHighWaterMark)
+    throw new BackupValidationError('thread ID exceeds high-water mark');
   if (lastPostId > manifest.postIdHighWaterMark) throw new BackupValidationError('post ID exceeds high-water mark');
   const actualDigest = Buffer.from(hash.digest('hex'), 'ascii');
   const expectedDigest = Buffer.from(trailer.sha256, 'ascii');
@@ -124,7 +126,7 @@ export const verifyBunBackup = scanBunBackup;
 async function* gzipLines(path: string): AsyncGenerator<Buffer> {
   const input = createReadStream(path);
   const gunzip = createGunzip();
-  input.on('error', error => gunzip.destroy(error));
+  input.on('error', (error) => gunzip.destroy(error));
   input.pipe(gunzip);
   let pending = Buffer.alloc(0);
   try {
@@ -148,7 +150,8 @@ async function* gzipLines(path: string): AsyncGenerator<Buffer> {
 
 function decodeLine(line: Buffer): string {
   if (line.byteLength === 0) throw new BackupValidationError('empty backup record');
-  if (line[0] === 0xef && line[1] === 0xbb && line[2] === 0xbf) throw new BackupValidationError('UTF-8 BOM is not allowed');
+  if (line[0] === 0xef && line[1] === 0xbb && line[2] === 0xbf)
+    throw new BackupValidationError('UTF-8 BOM is not allowed');
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(line);
   } catch {
@@ -173,6 +176,6 @@ function collectWarnings(summaries: Map<number, ThreadSummary>): BackupSemanticW
     }
   }
   return (Object.keys(warningIds) as BackupSemanticWarningType[])
-    .filter(type => counts[type] > 0)
-    .map(type => ({ type, count: counts[type], threadIds: warningIds[type] }));
+    .filter((type) => counts[type] > 0)
+    .map((type) => ({ type, count: counts[type], threadIds: warningIds[type] }));
 }

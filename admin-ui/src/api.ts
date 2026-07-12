@@ -35,15 +35,17 @@ async function request<T>(path: string, init?: RequestInit, notifyUnauthorized =
 
 export const api = {
   health: () => request<null>('/api/admin/health', undefined, false),
-  login: (password: string) => request<null>('/api/admin/login', { method: 'POST', body: JSON.stringify({ password }) }),
+  login: (password: string) =>
+    request<null>('/api/admin/login', { method: 'POST', body: JSON.stringify({ password }) }),
   logout: () => request<null>('/api/admin/logout', { method: 'POST' }),
   listThreads: () => request<Thread[]>('/api/admin/thread/list'),
   refreshThreads: () => request<null>('/api/admin/thread/refresh', { method: 'POST' }),
   getThread: (id: number) => request<Thread>(`/api/admin/thread/meta/${id}`),
-  updateThread: (thread: Thread) => request<Thread>('/api/admin/thread/meta', {
-    method: 'PUT',
-    body: JSON.stringify({ id: thread.id, title: thread.title, url: thread.url, locked: thread.locked }),
-  }),
+  updateThread: (thread: Thread) =>
+    request<Thread>('/api/admin/thread/meta', {
+      method: 'PUT',
+      body: JSON.stringify({ id: thread.id, title: thread.title, url: thread.url, locked: thread.locked }),
+    }),
   listPosts: (threadId: number) => request<Post[]>(`/api/admin/thread/${threadId}`),
   getPost: (threadId: number, postId: number) => request<Post>(`/api/admin/posts/${threadId}/${postId}`),
   updatePost: (threadId: number, post: Post) =>

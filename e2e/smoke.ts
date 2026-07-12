@@ -18,7 +18,8 @@ async function main() {
   const storage = new BunSqliteStorage({ filename: dbPath });
   const core = new PommentCore({ storage });
   const password = 'correct horse battery staple';
-  const passwordHash = '$argon2id$v=19$m=65536,t=2,p=1$tyQOWKNcs1KKzWRKY7mxeybWiZipXV0MCRqTWswH3vI$hc3lPY7HeprGEZNECMxEAXlCG1g8+XD1jrb/lVeBYno';
+  const passwordHash =
+    '$argon2id$v=19$m=65536,t=2,p=1$tyQOWKNcs1KKzWRKY7mxeybWiZipXV0MCRqTWswH3vI$hc3lPY7HeprGEZNECMxEAXlCG1g8+XD1jrb/lVeBYno';
   const authStore = new MemoryAdminAuthStore();
   const adminAuth = new AdminAuth({
     passwordVerifier: new BunAdminPasswordVerifier(passwordHash),
@@ -170,7 +171,7 @@ async function main() {
       assert(res.status === 200, `expected 200, got ${res.status}`);
       const json = (await res.json()) as { code: number; data: any[] };
       assert(json.data.length === 3, `expected 3 posts, got ${json.data.length}`);
-      const adminPost = json.data.find(p => p.content === 'admin reply');
+      const adminPost = json.data.find((p) => p.content === 'admin reply');
       assert(adminPost, 'expected to find admin post');
       assert(typeof adminPost.email === 'string', 'admin route should expose email');
     });
@@ -237,7 +238,9 @@ async function main() {
     });
 
     await scenario('thread meta by URL endpoints work', async () => {
-      const byUrlRes = await handler(req('POST', '/api/public/thread/meta/byUrl', { url: 'https://example.com/smoke' }));
+      const byUrlRes = await handler(
+        req('POST', '/api/public/thread/meta/byUrl', { url: 'https://example.com/smoke' }),
+      );
       const byUrlJson = (await byUrlRes.json()) as { code: number; data: any };
       assert(byUrlJson.data.id === threadId, 'byUrl should return correct thread');
 

@@ -34,18 +34,22 @@ describe('admin HTTP authentication', () => {
     expect(unauthorized.status).toBe(401);
     expect(unauthorized.headers.get('cache-control')).toBe('no-store');
 
-    const invalidOrigin = await handler(new Request(`${origin}/api/admin/login`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', origin: 'https://attacker.example' },
-      body: JSON.stringify({ password: 'correct horse battery staple' }),
-    }));
+    const invalidOrigin = await handler(
+      new Request(`${origin}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: 'https://attacker.example' },
+        body: JSON.stringify({ password: 'correct horse battery staple' }),
+      }),
+    );
     expect(invalidOrigin.status).toBe(403);
 
-    const login = await handler(new Request(`${origin}/api/admin/login`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', origin },
-      body: JSON.stringify({ password: 'correct horse battery staple' }),
-    }));
+    const login = await handler(
+      new Request(`${origin}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin },
+        body: JSON.stringify({ password: 'correct horse battery staple' }),
+      }),
+    );
     expect(login.status).toBe(200);
     const setCookie = login.headers.get('set-cookie') ?? '';
     expect(setCookie).toContain('HttpOnly');
@@ -57,10 +61,12 @@ describe('admin HTTP authentication', () => {
     const authorized = await handler(new Request(`${origin}/api/admin/health`, { headers: { cookie } }));
     expect(authorized.status).toBe(200);
 
-    const logout = await handler(new Request(`${origin}/api/admin/logout`, {
-      method: 'POST',
-      headers: { cookie, origin },
-    }));
+    const logout = await handler(
+      new Request(`${origin}/api/admin/logout`, {
+        method: 'POST',
+        headers: { cookie, origin },
+      }),
+    );
     expect(logout.status).toBe(200);
     expect(logout.headers.get('set-cookie')).toContain('Max-Age=0');
 
@@ -70,11 +76,13 @@ describe('admin HTTP authentication', () => {
 
   test('limits login bodies and fails closed without auth configuration', async () => {
     const handler = setup();
-    const oversized = await handler(new Request(`${origin}/api/admin/login`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', origin },
-      body: JSON.stringify({ password: 'x'.repeat(5000) }),
-    }));
+    const oversized = await handler(
+      new Request(`${origin}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin },
+        body: JSON.stringify({ password: 'x'.repeat(5000) }),
+      }),
+    );
     expect(oversized.status).toBe(413);
 
     const unavailableHandler = createHandler({} as PommentCore);
@@ -95,19 +103,21 @@ describe('admin HTTP authentication', () => {
   test('emits auth errors only for prefixed admin paths', async () => {
     const events: string[] = [];
     const unavailableHandler = createHandler({} as PommentCore, {
-      onAdminAuthEvent: event => events.push(event),
+      onAdminAuthEvent: (event) => events.push(event),
     });
     await unavailableHandler(new Request(`${origin}/api/admin/health`));
     await unavailableHandler(new Request(`${origin}/admin/health`));
     expect(events).toEqual(['unavailable']);
 
-    const handler = setup(event => events.push(event));
+    const handler = setup((event) => events.push(event));
     for (let attempt = 0; attempt < 6; attempt++) {
-      await handler(new Request(`${origin}/api/admin/login`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', origin },
-        body: JSON.stringify({ password: 'wrong' }),
-      }));
+      await handler(
+        new Request(`${origin}/api/admin/login`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', origin },
+          body: JSON.stringify({ password: 'wrong' }),
+        }),
+      );
     }
     expect(events).toEqual(['unavailable', 'login-rate-limited']);
   });

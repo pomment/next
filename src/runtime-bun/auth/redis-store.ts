@@ -1,10 +1,5 @@
 import { RedisClient } from 'bun';
-import type {
-  AdminSession,
-  AdminSessionStore,
-  LoginAttemptResult,
-  LoginAttemptStore,
-} from '../../core';
+import type { AdminSession, AdminSessionStore, LoginAttemptResult, LoginAttemptStore } from '../../core';
 
 const CONSUME_SCRIPT = `
 local count = redis.call('INCR', KEYS[1])
@@ -62,11 +57,7 @@ export class RedisAdminAuthStore implements AdminSessionStore, LoginAttemptStore
   }
 
   async check(key: string, limit: number): Promise<LoginAttemptResult> {
-    const result = await this.client.send('EVAL', [
-      CHECK_SCRIPT,
-      '1',
-      attemptKey(key),
-    ]) as [number, number];
+    const result = (await this.client.send('EVAL', [CHECK_SCRIPT, '1', attemptKey(key)])) as [number, number];
     return {
       allowed: Number(result[0]) < limit,
       retryAfterSeconds: Math.max(1, Math.ceil(Number(result[1]) / 1000)),
@@ -74,12 +65,10 @@ export class RedisAdminAuthStore implements AdminSessionStore, LoginAttemptStore
   }
 
   async consume(key: string, limit: number, windowMs: number): Promise<LoginAttemptResult> {
-    const result = await this.client.send('EVAL', [
-      CONSUME_SCRIPT,
-      '1',
-      attemptKey(key),
-      String(windowMs),
-    ]) as [number, number];
+    const result = (await this.client.send('EVAL', [CONSUME_SCRIPT, '1', attemptKey(key), String(windowMs)])) as [
+      number,
+      number,
+    ];
     return {
       allowed: Number(result[0]) <= limit,
       retryAfterSeconds: Math.max(1, Math.ceil(Number(result[1]) / 1000)),

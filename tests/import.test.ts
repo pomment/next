@@ -19,7 +19,7 @@ class MemoryStorage implements StoragePort {
 
   async getThreadByUrl(url: string): Promise<Thread | null> {
     const id = this.urlToThreadId.get(url);
-    return id ? this.threads.get(id) ?? null : null;
+    return id ? (this.threads.get(id) ?? null) : null;
   }
 
   async createThread(thread: Thread): Promise<number> {
@@ -44,7 +44,7 @@ class MemoryStorage implements StoragePort {
   }
 
   async getPost(threadId: number, postId: number): Promise<Post | null> {
-    return (this.posts.get(threadId) ?? []).find(post => post.id === postId) ?? null;
+    return (this.posts.get(threadId) ?? []).find((post) => post.id === postId) ?? null;
   }
 
   async appendPost(threadId: number, post: Post): Promise<number> {
@@ -57,7 +57,7 @@ class MemoryStorage implements StoragePort {
   async updatePost(threadId: number, post: Post): Promise<void> {
     this.posts.set(
       threadId,
-      (this.posts.get(threadId) ?? []).map(item => (item.id === post.id ? post : item)),
+      (this.posts.get(threadId) ?? []).map((item) => (item.id === post.id ? post : item)),
     );
   }
 
@@ -142,7 +142,7 @@ describe('importThread', () => {
     const posts = await core.listAllPostsById(result.thread.id);
     expect(posts).toHaveLength(2);
 
-    const alice = posts.find(p => p.name === 'Alice')!;
+    const alice = posts.find((p) => p.name === 'Alice')!;
     expect(alice.email).toBe('alice@example.com');
     expect(alice.emailHashed).toBe('c160f8cc69a4f0bf2b0362752353d060');
     expect(alice.website).toBe('https://alice.example.com');
@@ -153,7 +153,7 @@ describe('importThread', () => {
     expect(alice.updatedAt).toBe(1609459200000);
     expect(alice.id).toBeGreaterThan(0);
 
-    const bob = posts.find(p => p.name === 'Bob')!;
+    const bob = posts.find((p) => p.name === 'Bob')!;
     expect(bob.parent).toBe(alice.id);
   });
 

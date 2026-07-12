@@ -1,5 +1,10 @@
 import type { AdminAuth, BackupImportPort, PommentCore, StartBackupImportInput } from '../core';
-import type { AdminEditPostInput, CreateAdminPostInput, CreateUserPostInput, ImportThreadInput } from '../core/domain/post';
+import type {
+  AdminEditPostInput,
+  CreateAdminPostInput,
+  CreateUserPostInput,
+  ImportThreadInput,
+} from '../core/domain/post';
 import type { UpdateThreadInput } from '../core/domain/thread';
 import {
   ForbiddenError,
@@ -51,7 +56,7 @@ export function createHandler(
       method: 'POST',
       path: '/api/admin/login',
       publicAdmin: true,
-      handler: async request => {
+      handler: async (request) => {
         const body = await readJsonLimited<{ password?: unknown }>(request, 4096);
         const clientIp = requestContext.get(request)?.clientIp;
         if (!clientIp) {
@@ -59,7 +64,10 @@ export function createHandler(
         }
         const result = await options.adminAuth!.login(body.password, clientIp);
         const response = jsonSuccess(null);
-        response.headers.append('set-cookie', sessionCookie(result.token, result.expiresAt, options.secureAdminCookie !== false));
+        response.headers.append(
+          'set-cookie',
+          sessionCookie(result.token, result.expiresAt, options.secureAdminCookie !== false),
+        );
         options.onAdminAuthEvent?.('login-success', clientIp);
         return response;
       },
@@ -67,7 +75,7 @@ export function createHandler(
     {
       method: 'POST',
       path: '/api/admin/logout',
-      handler: async request => {
+      handler: async (request) => {
         const clientIp = requestContext.get(request)?.clientIp ?? null;
         await options.adminAuth!.logout(readCookie(request, ADMIN_COOKIE));
         const response = jsonSuccess(null);
@@ -89,7 +97,7 @@ export function createHandler(
     {
       method: 'POST',
       path: '/api/admin/backup/import',
-      handler: async request => {
+      handler: async (request) => {
         const body = await readJsonLimited<StartBackupImportInput>(request, 64 * 1024);
         return jsonSuccess(await options.backupImport!.start(body));
       },
@@ -129,7 +137,7 @@ export function createHandler(
     {
       method: 'POST',
       path: '/api/public/thread/meta/byUrl',
-      handler: async request => {
+      handler: async (request) => {
         const body = await readJson<{ url: string }>(request);
         return jsonSuccess(await core.getThreadMetaByUrl(body.url));
       },
@@ -137,7 +145,7 @@ export function createHandler(
     {
       method: 'POST',
       path: '/api/public/thread/meta/byUrls',
-      handler: async request => {
+      handler: async (request) => {
         const body = await readJson<string[]>(request);
         return jsonSuccess(await core.getThreadMetaByUrls(body));
       },
@@ -150,7 +158,7 @@ export function createHandler(
     {
       method: 'POST',
       path: '/api/public/posts/byUrl',
-      handler: async request => {
+      handler: async (request) => {
         const body = await readJson<{ url: string }>(request);
         return jsonSuccess(await core.listPublicPostsByUrl(body.url));
       },
@@ -158,7 +166,7 @@ export function createHandler(
     {
       method: 'POST',
       path: '/api/public/posts/add',
-      handler: async request => {
+      handler: async (request) => {
         const body = await readJson<CreateUserPostInput>(request);
         return jsonSuccess(await core.createUserPost(body));
       },
@@ -189,12 +197,12 @@ export function createHandler(
     {
       method: 'PUT',
       path: '/api/admin/thread/meta',
-      handler: async request => jsonSuccess(await core.updateThreadMeta(await readJson<UpdateThreadInput>(request))),
+      handler: async (request) => jsonSuccess(await core.updateThreadMeta(await readJson<UpdateThreadInput>(request))),
     },
     {
       method: 'POST',
       path: '/api/admin/thread/import',
-      handler: async request => {
+      handler: async (request) => {
         const body = await readJson<ImportThreadInput>(request);
         return jsonSuccess(await core.importThread(body));
       },
@@ -202,7 +210,8 @@ export function createHandler(
     {
       method: 'GET',
       path: '/api/admin/posts/:threadId/:postId',
-      handler: async (_request, params) => jsonSuccess(await core.getPost(Number(params.threadId), Number(params.postId))),
+      handler: async (_request, params) =>
+        jsonSuccess(await core.getPost(Number(params.threadId), Number(params.postId))),
     },
     {
       method: 'POST',
@@ -228,7 +237,7 @@ export function createHandler(
     try {
       const url = new URL(request.url);
 
-      if (pathname.startsWith('/api/public/') && options.backupImport && await options.backupImport.isImporting()) {
+      if (pathname.startsWith('/api/public/') && options.backupImport && (await options.backupImport.isImporting())) {
         throw new ServiceUnavailableError('backup import is in progress');
       }
 
@@ -252,10 +261,12 @@ export function createHandler(
             if (route.path.startsWith('/api/admin/backup/') && !options.backupImport) {
               throw new ServiceUnavailableError('backup import is unavailable');
             }
-            if (!route.path.startsWith('/api/admin/backup/')
-              && !isImportSafeAdminPath(route.path)
-              && options.backupImport
-              && await options.backupImport.isImporting()) {
+            if (
+              !route.path.startsWith('/api/admin/backup/') &&
+              !isImportSafeAdminPath(route.path) &&
+              options.backupImport &&
+              (await options.backupImport.isImporting())
+            ) {
               throw new ServiceUnavailableError('backup import is in progress');
             }
           }

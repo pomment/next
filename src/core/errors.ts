@@ -46,7 +46,10 @@ export class PayloadTooLargeError extends PommentError {
 }
 
 export class TooManyRequestsError extends PommentError {
-  constructor(public readonly retryAfterSeconds: number, message = 'too many requests') {
+  constructor(
+    public readonly retryAfterSeconds: number,
+    message = 'too many requests',
+  ) {
     super(message, 'TOO_MANY_REQUESTS', 429);
   }
 }

@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { PommentCore, type EditPostInput, type Post, type StoragePort, type Thread, type UpdateThreadInput } from '../src/core';
+import {
+  PommentCore,
+  type EditPostInput,
+  type Post,
+  type StoragePort,
+  type Thread,
+  type UpdateThreadInput,
+} from '../src/core';
 
 class MemoryStorage implements StoragePort {
   private threads = new Map<number, Thread>();
@@ -18,7 +25,7 @@ class MemoryStorage implements StoragePort {
 
   async getThreadByUrl(url: string): Promise<Thread | null> {
     const id = this.urlToThreadId.get(url);
-    return id ? this.threads.get(id) ?? null : null;
+    return id ? (this.threads.get(id) ?? null) : null;
   }
 
   async createThread(thread: Thread): Promise<number> {
@@ -43,7 +50,7 @@ class MemoryStorage implements StoragePort {
   }
 
   async getPost(threadId: number, postId: number): Promise<Post | null> {
-    return (this.posts.get(threadId) ?? []).find(post => post.id === postId) ?? null;
+    return (this.posts.get(threadId) ?? []).find((post) => post.id === postId) ?? null;
   }
 
   async appendPost(threadId: number, post: Post): Promise<number> {
@@ -56,7 +63,7 @@ class MemoryStorage implements StoragePort {
   async updatePost(threadId: number, post: Post): Promise<void> {
     this.posts.set(
       threadId,
-      (this.posts.get(threadId) ?? []).map(item => (item.id === post.id ? post : item)),
+      (this.posts.get(threadId) ?? []).map((item) => (item.id === post.id ? post : item)),
     );
   }
 
@@ -167,13 +174,15 @@ describe('PommentCore', () => {
     expect(core.updateThreadMeta({ ...input, url: 'https://' })).rejects.toThrow(
       'thread URL must be a valid http or https URL',
     );
-    expect(core.createUserPost({
-      url: updated.url,
-      title: updated.title,
-      name: 'Blocked',
-      email: 'blocked@example.com',
-      content: 'blocked',
-    })).rejects.toThrow('thread is locked');
+    expect(
+      core.createUserPost({
+        url: updated.url,
+        title: updated.title,
+        name: 'Blocked',
+        email: 'blocked@example.com',
+        content: 'blocked',
+      }),
+    ).rejects.toThrow('thread is locked');
 
     await core.createUserPost({
       url: 'https://example.com/conflict',

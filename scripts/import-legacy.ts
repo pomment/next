@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { Writable } from 'node:stream';
 
-const LEGACY_DATA_PATH = process.env.LEGACY_DATA_PATH ?? '/Users/tcdw/Projects/Self/next/apps/SilverBlog/plugins/pomment';
+const LEGACY_DATA_PATH =
+  process.env.LEGACY_DATA_PATH ?? '/Users/tcdw/Projects/Self/next/apps/SilverBlog/plugins/pomment';
 const POMMENT_API_ENDPOINT = new URL(process.env.POMMENT_API_ENDPOINT ?? 'http://127.0.0.1:18080/api');
 
 interface LegacyMeta {
@@ -50,7 +51,7 @@ async function importThread(meta: LegacyMeta, posts: LegacyPost[], cookie: strin
       amount: meta.amount,
       locked: meta.locked,
     },
-    posts: posts.map(p => ({
+    posts: posts.map((p) => ({
       id: p.id,
       name: p.name,
       email: p.email,
@@ -108,7 +109,11 @@ async function login(): Promise<string> {
 
 async function readPassword(): Promise<string> {
   if (!process.stdin.isTTY) throw new Error('Password input requires an interactive terminal');
-  const muted = new Writable({ write(_chunk, _encoding, callback) { callback(); } });
+  const muted = new Writable({
+    write(_chunk, _encoding, callback) {
+      callback();
+    },
+  });
   const readline = createInterface({ input: process.stdin, output: muted, terminal: true });
   try {
     process.stderr.write('Admin password: ');
@@ -174,7 +179,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(error => {
+main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });

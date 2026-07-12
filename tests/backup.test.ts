@@ -114,16 +114,32 @@ describe('v1 backup', () => {
 
     expect(scanned.manifest).toEqual(exported.manifest);
     expect(scanned.trailer).toEqual(exported.trailer);
-    expect(scanned.manifest).toMatchObject({ threadCount: 2, postCount: 1, threadIdHighWaterMark: 8, postIdHighWaterMark: 5 });
+    expect(scanned.manifest).toMatchObject({
+      threadCount: 2,
+      postCount: 1,
+      threadIdHighWaterMark: 8,
+      postIdHighWaterMark: 5,
+    });
     expect(scanned.warnings).toEqual([]);
     expect(lines[0]).toBe(serializeBackupManifestV1(exported.manifest));
-    expect(lines.map(line => line ? JSON.parse(line).type : '')).toEqual(['manifest', 'thread', 'thread', 'post', 'trailer', '']);
+    expect(lines.map((line) => (line ? JSON.parse(line).type : ''))).toEqual([
+      'manifest',
+      'thread',
+      'thread',
+      'post',
+      'trailer',
+      '',
+    ]);
   });
 
   test('rejects a checksum mismatch', async () => {
     const { backupPath } = tempFiles();
     const fixture = fixtureRecords();
-    writeArchive(backupPath, [serializeBackupManifestV1(fixture.manifest), fixture.thread, fixture.post], '0'.repeat(64));
+    writeArchive(
+      backupPath,
+      [serializeBackupManifestV1(fixture.manifest), fixture.thread, fixture.post],
+      '0'.repeat(64),
+    );
     await expect(scanBunBackup(backupPath)).rejects.toThrow('checksum mismatch');
   });
 

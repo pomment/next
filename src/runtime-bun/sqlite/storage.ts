@@ -52,16 +52,12 @@ export class BunSqliteStorage implements StoragePort {
   }
 
   async getThreadById(id: number): Promise<Thread | null> {
-    const row = this.db
-      .query<ThreadRow, [number]>('SELECT * FROM threads WHERE id = ?')
-      .get(id);
+    const row = this.db.query<ThreadRow, [number]>('SELECT * FROM threads WHERE id = ?').get(id);
     return row ? threadFromRow(row) : null;
   }
 
   async getThreadByUrl(url: string): Promise<Thread | null> {
-    const row = this.db
-      .query<ThreadRow, [string]>('SELECT * FROM threads WHERE url = ?')
-      .get(url);
+    const row = this.db.query<ThreadRow, [string]>('SELECT * FROM threads WHERE url = ?').get(url);
     return row ? threadFromRow(row) : null;
   }
 
@@ -71,14 +67,7 @@ export class BunSqliteStorage implements StoragePort {
         INSERT INTO threads (url, title, first_post_at, latest_post_at, amount, locked)
         VALUES (?, ?, ?, ?, ?, ?)
       `)
-      .run(
-        thread.url,
-        thread.title,
-        thread.firstPostAt,
-        thread.latestPostAt,
-        thread.amount,
-        thread.locked ? 1 : 0,
-      );
+      .run(thread.url, thread.title, thread.firstPostAt, thread.latestPostAt, thread.amount, thread.locked ? 1 : 0);
     return (this.db.query('SELECT last_insert_rowid() AS id').get() as { id: number }).id;
   }
 

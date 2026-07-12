@@ -33,11 +33,7 @@ export interface BackupTrailerV1 {
   sha256: string;
 }
 
-export type BackupRecordV1 =
-  | BackupManifestV1
-  | BackupThreadRecordV1
-  | BackupPostRecordV1
-  | BackupTrailerV1;
+export type BackupRecordV1 = BackupManifestV1 | BackupThreadRecordV1 | BackupPostRecordV1 | BackupTrailerV1;
 
 export class BackupValidationError extends Error {
   constructor(message: string) {
@@ -85,7 +81,7 @@ function objectWithExactKeys(value: unknown, keys: readonly string[], name: stri
     throw new BackupValidationError(`${name} must be an object`);
   }
   const actual = Object.keys(value);
-  if (actual.length !== keys.length || actual.some(key => !keys.includes(key))) {
+  if (actual.length !== keys.length || actual.some((key) => !keys.includes(key))) {
     throw new BackupValidationError(`${name} fields are invalid`);
   }
   return value as Record<string, unknown>;
@@ -193,11 +189,20 @@ export function parseBackupRecordV1(text: string): BackupRecordV1 {
   }
   let record: BackupRecordV1;
   switch ((value as { type?: unknown }).type) {
-    case 'manifest': record = validateBackupManifestV1(value); break;
-    case 'thread': record = validateBackupThreadRecordV1(value); break;
-    case 'post': record = validateBackupPostRecordV1(value); break;
-    case 'trailer': record = validateBackupTrailerV1(value); break;
-    default: throw new BackupValidationError('record type is invalid');
+    case 'manifest':
+      record = validateBackupManifestV1(value);
+      break;
+    case 'thread':
+      record = validateBackupThreadRecordV1(value);
+      break;
+    case 'post':
+      record = validateBackupPostRecordV1(value);
+      break;
+    case 'trailer':
+      record = validateBackupTrailerV1(value);
+      break;
+    default:
+      throw new BackupValidationError('record type is invalid');
   }
   if (serializeBackupRecordV1(record) !== text) throw new BackupValidationError('record is not canonical JSON');
   return record;
@@ -269,9 +274,13 @@ export function serializeBackupTrailerV1(record: BackupTrailerV1): string {
 
 export function serializeBackupRecordV1(record: BackupRecordV1): string {
   switch (record.type) {
-    case 'manifest': return serializeBackupManifestV1(record);
-    case 'thread': return serializeBackupThreadRecordV1(record);
-    case 'post': return serializeBackupPostRecordV1(record);
-    case 'trailer': return serializeBackupTrailerV1(record);
+    case 'manifest':
+      return serializeBackupManifestV1(record);
+    case 'thread':
+      return serializeBackupThreadRecordV1(record);
+    case 'post':
+      return serializeBackupPostRecordV1(record);
+    case 'trailer':
+      return serializeBackupTrailerV1(record);
   }
 }

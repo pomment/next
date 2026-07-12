@@ -7,7 +7,11 @@ if (!process.stdin.isTTY) {
   process.exit(1);
 }
 
-const muted = new Writable({ write(_chunk, _encoding, callback) { callback(); } });
+const muted = new Writable({
+  write(_chunk, _encoding, callback) {
+    callback();
+  },
+});
 const readline = createInterface({ input: process.stdin, output: muted, terminal: true });
 
 try {

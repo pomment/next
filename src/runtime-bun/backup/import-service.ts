@@ -112,39 +112,45 @@ export class BunSqliteBackupImportService implements BackupImportPort {
         .get(input.sha256, manifestJson);
       if (completed) {
         const sequence = this.sequenceValues();
-        if (this.digestImportedData(completed.manifest_json) === completed.backup_sha256
-          && sequence.threads === manifest.threadIdHighWaterMark
-          && sequence.posts === manifest.postIdHighWaterMark) {
+        if (
+          this.digestImportedData(completed.manifest_json) === completed.backup_sha256 &&
+          sequence.threads === manifest.threadIdHighWaterMark &&
+          sequence.posts === manifest.postIdHighWaterMark
+        ) {
           this.db.exec('COMMIT');
           return this.startResult(completed);
         }
       }
 
-      const counts = this.db.query<{ threads: number; posts: number }, []>(`
+      const counts = this.db
+        .query<{ threads: number; posts: number }, []>(`
         SELECT
           (SELECT COUNT(*) FROM threads) AS threads,
           (SELECT COUNT(*) FROM posts) AS posts
-      `).get()!;
+      `)
+        .get()!;
       if (counts.threads !== 0 || counts.posts !== 0) throw new ConflictError('backup import requires an empty site');
 
       const id = crypto.randomUUID();
       const createdAt = this.now();
-      this.db.query(`
+      this.db
+        .query(`
         INSERT INTO backup_imports (
           id, backup_sha256, manifest_json, status,
           max_records_per_batch, max_bytes_per_batch, max_record_bytes,
           created_at, expires_at
         ) VALUES (?, ?, ?, 'uploading', ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        input.sha256,
-        manifestJson,
-        MAX_BATCH_RECORDS,
-        MAX_BATCH_BYTES,
-        BACKUP_MAX_RECORD_BYTES,
-        createdAt,
-        createdAt + UPLOAD_TTL_MS,
-      );
+      `)
+        .run(
+          id,
+          input.sha256,
+          manifestJson,
+          MAX_BATCH_RECORDS,
+          MAX_BATCH_BYTES,
+          BACKUP_MAX_RECORD_BYTES,
+          createdAt,
+          createdAt + UPLOAD_TTL_MS,
+        );
       const result = this.startResult(this.rowById(id)!);
       this.db.exec('COMMIT');
       return result;
@@ -154,15 +160,11 @@ export class BunSqliteBackupImportService implements BackupImportPort {
     }
   }
 
-  async appendBatch(
-    id: string,
-    sequence: number,
-    sha256: string,
-    bytes: Uint8Array,
-  ): Promise<AppendBackupBatchResult> {
+  async appendBatch(id: string, sequence: number, sha256: string, bytes: Uint8Array): Promise<AppendBackupBatchResult> {
     if (!Number.isSafeInteger(sequence) || sequence < 0) throw new ValidationError('batch sequence is invalid');
     if (!/^[0-9a-f]{64}$/.test(sha256)) throw new ValidationError('batch sha256 is invalid');
-    if (bytes.byteLength === 0 || bytes.byteLength > MAX_BATCH_BYTES) throw new ValidationError('batch size is invalid');
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_BATCH_BYTES)
+      throw new ValidationError('batch size is invalid');
     const actualDigest = createHash('sha256').update(bytes).digest('hex');
     if (!equalDigest(actualDigest, sha256)) throw new ValidationError('batch checksum mismatch');
 
@@ -183,7 +185,9 @@ export class BunSqliteBackupImportService implements BackupImportPort {
       if (row.expires_at <= this.now()) throw new ConflictError('backup import session expired');
       if (sequence < row.next_sequence) {
         const existing = this.db
-          .query<{ sha256: string }, [string, number]>('SELECT sha256 FROM backup_import_batches WHERE import_id = ? AND sequence = ?')
+          .query<{ sha256: string }, [string, number]>(
+            'SELECT sha256 FROM backup_import_batches WHERE import_id = ? AND sequence = ?',
+          )
           .get(id, sequence);
         if (!existing || existing.sha256 !== sha256) throw new ConflictError('batch sequence has a different checksum');
         this.db.exec('COMMIT');
@@ -200,7 +204,8 @@ export class BunSqliteBackupImportService implements BackupImportPort {
       const batchUrls = new Set<string>();
 
       for (const line of lines) {
-        if (Buffer.byteLength(line, 'utf8') > BACKUP_MAX_RECORD_BYTES) throw new ValidationError('backup record exceeds 1 MiB');
+        if (Buffer.byteLength(line, 'utf8') > BACKUP_MAX_RECORD_BYTES)
+          throw new ValidationError('backup record exceeds 1 MiB');
         let record;
         try {
           record = parseBackupRecordV1(line);
@@ -208,8 +213,12 @@ export class BunSqliteBackupImportService implements BackupImportPort {
           throw validationError(error);
         }
         if (record.type === 'thread') {
-          if (phase !== 'threads' || record.data.id <= lastThreadId) throw new ValidationError('thread records are out of order');
-          if (batchUrls.has(record.data.url) || this.db.query('SELECT 1 FROM threads WHERE url = ?').get(record.data.url)) {
+          if (phase !== 'threads' || record.data.id <= lastThreadId)
+            throw new ValidationError('thread records are out of order');
+          if (
+            batchUrls.has(record.data.url) ||
+            this.db.query('SELECT 1 FROM threads WHERE url = ?').get(record.data.url)
+          ) {
             throw new ValidationError('duplicate thread URL');
           }
           batchUrls.add(record.data.url);
@@ -232,13 +241,17 @@ export class BunSqliteBackupImportService implements BackupImportPort {
         throw new ValidationError('batch may only contain thread and post records');
       }
 
-      this.db.query(`
+      this.db
+        .query(`
         UPDATE backup_imports
         SET status = 'uploading', next_sequence = ?, phase = ?, last_thread_id = ?, last_post_id = ?,
             thread_count = ?, post_count = ?
         WHERE id = ?
-      `).run(sequence + 1, phase, lastThreadId, lastPostId, threadCount, postCount, id);
-      this.db.query('INSERT INTO backup_import_batches (import_id, sequence, sha256) VALUES (?, ?, ?)').run(id, sequence, sha256);
+      `)
+        .run(sequence + 1, phase, lastThreadId, lastPostId, threadCount, postCount, id);
+      this.db
+        .query('INSERT INTO backup_import_batches (import_id, sequence, sha256) VALUES (?, ?, ?)')
+        .run(id, sequence, sha256);
       this.db.exec('COMMIT');
       return { nextSequence: sequence + 1, threadCount, postCount };
     } catch (error) {
@@ -261,17 +274,20 @@ export class BunSqliteBackupImportService implements BackupImportPort {
         throw new ValidationError('imported ID exceeds manifest high-water mark');
       }
       const digest = this.digestImportedData(row.manifest_json);
-      if (!equalDigest(digest, row.backup_sha256)) throw new ValidationError('imported data checksum does not match backup');
+      if (!equalDigest(digest, row.backup_sha256))
+        throw new ValidationError('imported data checksum does not match backup');
 
       setSequence(this.db, 'threads', manifest.threadIdHighWaterMark);
       setSequence(this.db, 'posts', manifest.postIdHighWaterMark);
       const warnings = this.collectWarnings();
       const completedAt = this.now();
-      this.db.query(`
+      this.db
+        .query(`
         UPDATE backup_imports
         SET status = 'complete', completed_at = ?, expires_at = ?
         WHERE id = ?
-      `).run(completedAt, completedAt + AUDIT_TTL_MS, id);
+      `)
+        .run(completedAt, completedAt + AUDIT_TTL_MS, id);
       this.db.query('DELETE FROM backup_import_batches WHERE import_id = ?').run(id);
       this.db.exec('COMMIT');
       return { threadCount: row.thread_count, postCount: row.post_count, warnings };
@@ -306,7 +322,9 @@ export class BunSqliteBackupImportService implements BackupImportPort {
   }
 
   private activeRow(): ImportRow | null {
-    return this.db.query<ImportRow, []>("SELECT * FROM backup_imports WHERE status = 'uploading' LIMIT 1").get() ?? null;
+    return (
+      this.db.query<ImportRow, []>("SELECT * FROM backup_imports WHERE status = 'uploading' LIMIT 1").get() ?? null
+    );
   }
 
   private rowById(id: string): ImportRow | null {
@@ -318,7 +336,9 @@ export class BunSqliteBackupImportService implements BackupImportPort {
     this.db.exec('BEGIN IMMEDIATE');
     try {
       const expiredUpload = this.db
-        .query<{ id: string }, [number]>("SELECT id FROM backup_imports WHERE status = 'uploading' AND expires_at <= ? LIMIT 1")
+        .query<{ id: string }, [number]>(
+          "SELECT id FROM backup_imports WHERE status = 'uploading' AND expires_at <= ? LIMIT 1",
+        )
         .get(now);
       if (expiredUpload) {
         this.db.query("UPDATE backup_imports SET status = 'applying' WHERE id = ?").run(expiredUpload.id);
@@ -344,21 +364,26 @@ export class BunSqliteBackupImportService implements BackupImportPort {
       hash.update(`${serializeBackupThreadRecordV1({ type: 'thread', data: threadFromRow(row) })}\n`);
     }
     for (const row of this.db.query<PostRow, []>('SELECT * FROM posts ORDER BY id ASC').iterate()) {
-      hash.update(`${serializeBackupPostRecordV1({ type: 'post', threadId: row.thread_id, data: postFromRow(row) })}\n`);
+      hash.update(
+        `${serializeBackupPostRecordV1({ type: 'post', threadId: row.thread_id, data: postFromRow(row) })}\n`,
+      );
     }
     return hash.digest('hex');
   }
 
   private sequenceValues(): { threads: number; posts: number } {
     const rows = this.db
-      .query<{ name: string; seq: number }, []>("SELECT name, seq FROM sqlite_sequence WHERE name IN ('threads', 'posts')")
+      .query<{ name: string; seq: number }, []>(
+        "SELECT name, seq FROM sqlite_sequence WHERE name IN ('threads', 'posts')",
+      )
       .all();
-    const values = new Map(rows.map(row => [row.name, row.seq]));
+    const values = new Map(rows.map((row) => [row.name, row.seq]));
     return { threads: values.get('threads') ?? 0, posts: values.get('posts') ?? 0 };
   }
 
   private collectWarnings(): BackupImportWarning[] {
-    const rows = this.db.query<AggregateRow, []>(`
+    const rows = this.db
+      .query<AggregateRow, []>(`
       SELECT t.id, t.amount, t.first_post_at, t.latest_post_at,
              COALESCE(SUM(CASE WHEN p.hidden = 0 THEN 1 ELSE 0 END), 0) AS actual_amount,
              COALESCE(MIN(p.created_at), 0) AS actual_first_post_at,
@@ -367,15 +392,18 @@ export class BunSqliteBackupImportService implements BackupImportPort {
       LEFT JOIN posts p ON p.thread_id = t.id
       GROUP BY t.id
       ORDER BY t.id ASC
-    `).all();
+    `)
+      .all();
     const definitions = [
       ['amount', 'amount', 'actual_amount'],
       ['firstPostAt', 'first_post_at', 'actual_first_post_at'],
       ['latestPostAt', 'latest_post_at', 'actual_latest_post_at'],
     ] as const;
     return definitions.flatMap(([type, stored, actual]) => {
-      const mismatches = rows.filter(row => row[stored] !== row[actual]);
-      return mismatches.length === 0 ? [] : [{ type, count: mismatches.length, threadIds: mismatches.slice(0, 100).map(row => row.id) }];
+      const mismatches = rows.filter((row) => row[stored] !== row[actual]);
+      return mismatches.length === 0
+        ? []
+        : [{ type, count: mismatches.length, threadIds: mismatches.slice(0, 100).map((row) => row.id) }];
     });
   }
 }
@@ -400,7 +428,8 @@ function validationError(error: unknown): ValidationError {
 
 function normalizeSqliteError(error: unknown): unknown {
   if (error instanceof BackupValidationError) return validationError(error);
-  if (error instanceof Error && /UNIQUE constraint failed/.test(error.message)) return new ValidationError('backup contains duplicate data');
+  if (error instanceof Error && /UNIQUE constraint failed/.test(error.message))
+    return new ValidationError('backup contains duplicate data');
   return error;
 }
 
@@ -408,7 +437,15 @@ function insertThread(db: Database, thread: import('../../core').Thread): void {
   db.query(`
     INSERT INTO threads (id, url, title, first_post_at, latest_post_at, amount, locked)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(thread.id, thread.url, thread.title, thread.firstPostAt, thread.latestPostAt, thread.amount, thread.locked ? 1 : 0);
+  `).run(
+    thread.id,
+    thread.url,
+    thread.title,
+    thread.firstPostAt,
+    thread.latestPostAt,
+    thread.amount,
+    thread.locked ? 1 : 0,
+  );
 }
 
 function insertPost(db: Database, threadId: number, post: import('../../core').Post): void {
@@ -419,9 +456,23 @@ function insertPost(db: Database, threadId: number, post: import('../../core').P
       orig_content, avatar, rating
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    post.id, threadId, post.name, post.email, post.emailHashed, post.website, post.parent,
-    post.content, post.hidden ? 1 : 0, post.byAdmin ? 1 : 0, post.receiveEmail ? 1 : 0,
-    post.editKey, post.createdAt, post.updatedAt, post.origContent, post.avatar, post.rating,
+    post.id,
+    threadId,
+    post.name,
+    post.email,
+    post.emailHashed,
+    post.website,
+    post.parent,
+    post.content,
+    post.hidden ? 1 : 0,
+    post.byAdmin ? 1 : 0,
+    post.receiveEmail ? 1 : 0,
+    post.editKey,
+    post.createdAt,
+    post.updatedAt,
+    post.origContent,
+    post.avatar,
+    post.rating,
   );
 }
 

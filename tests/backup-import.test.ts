@@ -71,11 +71,13 @@ async function authenticatedHandler(databasePath: string) {
   });
   const rawHandler = createHandler({} as PommentCore, { adminAuth, adminOrigin: origin, backupImport });
   const handler = (request: Request) => rawHandler(request, { clientIp: '192.0.2.1' });
-  const login = await handler(new Request(`${origin}/api/admin/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', origin },
-    body: JSON.stringify({ password: 'correct horse battery staple' }),
-  }));
+  const login = await handler(
+    new Request(`${origin}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin },
+      body: JSON.stringify({ password: 'correct horse battery staple' }),
+    }),
+  );
   const cookie = login.headers.get('set-cookie')!.split(';', 1)[0];
   return { storage, backupImport, handler, cookie };
 }
@@ -88,7 +90,7 @@ function adminRequest(path: string, cookie: string, init: RequestInit = {}): Req
 }
 
 async function responseData<T>(response: Response): Promise<T> {
-  const body = await response.json() as { code: number; data: T };
+  const body = (await response.json()) as { code: number; data: T };
   expect(response.status).toBe(200);
   expect(body.code).toBe(200);
   return body.data;
@@ -102,25 +104,29 @@ describe('backup import', () => {
     const verified = await scanBunBackup(paths.backup);
     const target = await authenticatedHandler(paths.target);
 
-    const session = await responseData<{ id: string; nextSequence: number }>(await target.handler(adminRequest(
-      '/api/admin/backup/import',
-      target.cookie,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ manifest: verified.manifest, sha256: verified.trailer.sha256 }),
-      },
-    )));
+    const session = await responseData<{ id: string; nextSequence: number }>(
+      await target.handler(
+        adminRequest('/api/admin/backup/import', target.cookie, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ manifest: verified.manifest, sha256: verified.trailer.sha256 }),
+        }),
+      ),
+    );
     expect(await target.backupImport.isImporting()).toBe(true);
-    await expect(target.storage.transaction(storage => storage.createThread({
-      id: 0,
-      url: 'https://example.com/race',
-      title: 'Race',
-      firstPostAt: 0,
-      latestPostAt: 0,
-      amount: 0,
-      locked: false,
-    }))).rejects.toMatchObject({ status: 503 });
+    await expect(
+      target.storage.transaction((storage) =>
+        storage.createThread({
+          id: 0,
+          url: 'https://example.com/race',
+          title: 'Race',
+          firstPostAt: 0,
+          latestPostAt: 0,
+          amount: 0,
+          locked: false,
+        }),
+      ),
+    ).rejects.toMatchObject({ status: 503 });
 
     const unavailable = await target.handler(new Request(`${origin}/api/public/posts/7`));
     expect(unavailable.status).toBe(503);
@@ -128,29 +134,38 @@ describe('backup import', () => {
     expect(unavailableAdmin.status).toBe(503);
 
     const lines: string[] = [];
-    await scanBunBackup(paths.backup, { onDataRecord: (_record, line) => { lines.push(line); } });
+    await scanBunBackup(paths.backup, {
+      onDataRecord: (_record, line) => {
+        lines.push(line);
+      },
+    });
     const bytes = new TextEncoder().encode(`${lines.join('\n')}\n`);
     const digest = createHash('sha256').update(bytes).digest('hex');
-    const batchRequest = () => adminRequest(
-      `/api/admin/backup/import/${session.id}/batches/0`,
-      target.cookie,
-      { method: 'PUT', body: bytes, headers: { 'x-pomment-batch-sha256': digest } },
-    );
+    const batchRequest = () =>
+      adminRequest(`/api/admin/backup/import/${session.id}/batches/0`, target.cookie, {
+        method: 'PUT',
+        body: bytes,
+        headers: { 'x-pomment-batch-sha256': digest },
+      });
     const firstBatch = await responseData<{ nextSequence: number }>(await target.handler(batchRequest()));
     const retriedBatch = await responseData<{ nextSequence: number }>(await target.handler(batchRequest()));
     expect(firstBatch.nextSequence).toBe(1);
     expect(retriedBatch.nextSequence).toBe(1);
 
-    const completed = await responseData<{ threadCount: number; postCount: number }>(await target.handler(adminRequest(
-      `/api/admin/backup/import/${session.id}/complete`,
-      target.cookie,
-      { method: 'POST' },
-    )));
+    const completed = await responseData<{ threadCount: number; postCount: number }>(
+      await target.handler(
+        adminRequest(`/api/admin/backup/import/${session.id}/complete`, target.cookie, { method: 'POST' }),
+      ),
+    );
     expect(completed).toMatchObject({ threadCount: 1, postCount: 1 });
     expect(await target.backupImport.isImporting()).toBe(false);
 
     const db = new Database(paths.target, { readonly: true });
-    expect(db.query('SELECT id, url, locked FROM threads').get()).toEqual({ id: 7, url: 'https://example.com/thread', locked: 1 });
+    expect(db.query('SELECT id, url, locked FROM threads').get()).toEqual({
+      id: 7,
+      url: 'https://example.com/thread',
+      locked: 1,
+    });
     expect(db.query('SELECT id, thread_id, email, parent, edit_key FROM posts').get()).toEqual({
       id: 11,
       thread_id: 7,
@@ -158,24 +173,30 @@ describe('backup import', () => {
       parent: 999,
       edit_key: 'secret-edit-key',
     });
-    expect(db.query("SELECT name, seq FROM sqlite_sequence WHERE name IN ('threads', 'posts') ORDER BY name").all()).toEqual([
+    expect(
+      db.query("SELECT name, seq FROM sqlite_sequence WHERE name IN ('threads', 'posts') ORDER BY name").all(),
+    ).toEqual([
       { name: 'posts', seq: 30 },
       { name: 'threads', seq: 20 },
     ]);
     db.close();
-    await target.storage.transaction(storage => storage.createThread({
-      id: 0,
-      url: 'https://example.com/after-restore',
-      title: 'After restore',
-      firstPostAt: 0,
-      latestPostAt: 0,
-      amount: 0,
-      locked: false,
-    }));
-    await expect(target.backupImport.start({
-      manifest: verified.manifest,
-      sha256: verified.trailer.sha256,
-    })).rejects.toMatchObject({ status: 409 });
+    await target.storage.transaction((storage) =>
+      storage.createThread({
+        id: 0,
+        url: 'https://example.com/after-restore',
+        title: 'After restore',
+        firstPostAt: 0,
+        latestPostAt: 0,
+        amount: 0,
+        locked: false,
+      }),
+    );
+    await expect(
+      target.backupImport.start({
+        manifest: verified.manifest,
+        sha256: verified.trailer.sha256,
+      }),
+    ).rejects.toMatchObject({ status: 409 });
     target.backupImport.close();
     target.storage.close();
   });
@@ -189,7 +210,11 @@ describe('backup import', () => {
     const service = new BunSqliteBackupImportService(paths.target);
     const session = await service.start({ manifest: verified.manifest, sha256: verified.trailer.sha256 });
     const lines: string[] = [];
-    await scanBunBackup(paths.backup, { onDataRecord: (record, line) => { if (record.type === 'thread') lines.push(line); } });
+    await scanBunBackup(paths.backup, {
+      onDataRecord: (record, line) => {
+        if (record.type === 'thread') lines.push(line);
+      },
+    });
     const bytes = new TextEncoder().encode(`${lines.join('\n')}\n`);
     await service.appendBatch(session.id, 0, createHash('sha256').update(bytes).digest('hex'), bytes);
 
@@ -213,7 +238,11 @@ describe('backup import', () => {
     const service = new BunSqliteBackupImportService(paths.target, () => now);
     const session = await service.start({ manifest: verified.manifest, sha256: verified.trailer.sha256 });
     const lines: string[] = [];
-    await scanBunBackup(paths.backup, { onDataRecord: (record, line) => { if (record.type === 'thread') lines.push(line); } });
+    await scanBunBackup(paths.backup, {
+      onDataRecord: (record, line) => {
+        if (record.type === 'thread') lines.push(line);
+      },
+    });
     const bytes = new TextEncoder().encode(`${lines.join('\n')}\n`);
     await service.appendBatch(session.id, 0, createHash('sha256').update(bytes).digest('hex'), bytes);
 

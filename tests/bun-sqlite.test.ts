@@ -72,7 +72,7 @@ describe('BunSqliteStorage', () => {
 
     const result = await core.listPublicPostsById(thread.id);
     expect(result.meta.amount).toBe(2);
-    expect(result.post.map(post => post.content)).toEqual(['first', 'reply']);
+    expect(result.post.map((post) => post.content)).toEqual(['first', 'reply']);
     storage.close();
   });
 });
