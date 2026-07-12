@@ -7,7 +7,9 @@
     "admin-ui"
   ],
   "scripts": {
-    "dev": "bun run src/entry-bun/server.ts",
+    "dev": "bun --watch run src/entry-bun/server.ts",
+    "build": "bun run admin:build",
+    "start": "bun run src/entry-bun/server.ts",
     "admin:dev": "bun run --cwd admin-ui dev",
     "admin:build": "bun run --cwd admin-ui build",
     "admin:preview": "bun run --cwd admin-ui preview",
