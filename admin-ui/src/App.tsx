@@ -121,8 +121,8 @@ function AdminShell({ children, onLogout }: { children: ReactNode; onLogout: () 
       <Layout.Aside className="sidebar" width="248px">
         <div className="sidebar-brand"><div className="brand-mark small">P</div><div><strong>Pomment</strong><span>Admin</span></div></div>
         <nav>
-          <button className={location.pathname.startsWith('/threads') ? 'nav-item active' : 'nav-item'} onClick={() => navigate('/threads')}><ChatIcon /> 讨论管理</button>
-          <button className="nav-item" onClick={() => { setDraft(identity); setIdentityOpen(true); }}><SettingIcon /> 管理员身份</button>
+          <button type="button" className={location.pathname.startsWith('/threads') ? 'nav-item active' : 'nav-item'} onClick={() => navigate('/threads')}><ChatIcon /> 讨论管理</button>
+          <button type="button" className="nav-item" onClick={() => { setDraft(identity); setIdentityOpen(true); }}><SettingIcon /> 管理员身份</button>
         </nav>
         <div className="identity-card">
           <Avatar size="36px"><UserCircleIcon /></Avatar><div><strong>{identity.name || '未设置身份'}</strong><span>{identity.email || '回复前需要设置'}</span></div>
@@ -235,10 +235,10 @@ function orderTree(posts: Post[], ascending: boolean): Array<{ post: Post; depth
     visited.add(post.id);
     result.push({ post, depth });
     const replies = [...(children.get(post.id) ?? [])].sort((a, b) => ascending ? a.createdAt - b.createdAt : b.createdAt - a.createdAt);
-    replies.forEach(reply => visit(reply, depth + 1));
+    replies.forEach(reply => { visit(reply, depth + 1); });
   };
-  [...(children.get(0) ?? [])].sort((a, b) => ascending ? a.createdAt - b.createdAt : b.createdAt - a.createdAt).forEach(post => visit(post, 0));
-  posts.filter(post => !visited.has(post.id)).forEach(post => visit(post, 0));
+  [...(children.get(0) ?? [])].sort((a, b) => ascending ? a.createdAt - b.createdAt : b.createdAt - a.createdAt).forEach(post => { visit(post, 0); });
+  posts.filter(post => !visited.has(post.id)).forEach(post => { visit(post, 0); });
   return result;
 }
 
@@ -337,7 +337,7 @@ function ThreadPage() {
           <div className="thread-strip"><Tag theme={thread.locked ? 'warning' : 'success'} variant="light">{thread.locked ? '已锁定' : '进行中'}</Tag><span>{thread.amount} 条可见评论</span><span>创建于 {formatDate(thread.firstPostAt)}</span><Button size="small" variant="text" onClick={() => void load()}><RefreshIcon /> 刷新</Button></div>
           <Card className="admin-compose" bordered={false}><div><strong>发布顶层管理员评论</strong><span>使用本机保存的管理员身份</span></div><Textarea value={topContent} onChange={setTopContent} autosize={{ minRows: 3, maxRows: 8 }} placeholder="输入新评论..." /><Button theme="primary" loading={saving} disabled={!topContent.trim()} onClick={() => void createPost(0, topContent)}>发布评论</Button></Card>
           <div className="post-toolbar">
-            <div className="view-tabs"><button className={view === 'chronological' ? 'active' : ''} onClick={() => setView('chronological')}>时间顺序</button><button className={view === 'tree' ? 'active' : ''} onClick={() => setView('tree')}>回复树</button></div>
+            <div className="view-tabs"><button type="button" className={view === 'chronological' ? 'active' : ''} onClick={() => setView('chronological')}>时间顺序</button><button type="button" className={view === 'tree' ? 'active' : ''} onClick={() => setView('tree')}>回复树</button></div>
             <label className="switch-label">升序 <Switch size="small" value={ascending} onChange={value => { setAscending(value); localStorage.setItem(POST_SORT_KEY, value ? 'ascending' : 'descending'); }} /></label>
           </div>
           <section className="comments-list">
