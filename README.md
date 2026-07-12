@@ -32,7 +32,7 @@ bun run admin:dev
 
 During development, Vite proxies `/api` requests to the Bun entry at `http://127.0.0.1:8080` and supplies the trusted loopback client IP header. Run `bun run admin:build` before production startup; the Bun entry serves the built SPA at `/admin` and warns without disabling APIs when the build is missing.
 
-The Bun entry listens on loopback using `PORT` or `8080`, and stores data in `POMMENT_DB` or `pomment.db`. Put nginx or Caddy in front of it and overwrite `X-Real-IP` with the connecting client address. Do not share that loopback network namespace with untrusted workloads.
+The Bun entry listens on loopback using `PORT` or `8080`, and stores data in `POMMENT_DB` or `pomment.db`. Put nginx or Caddy in front of it and overwrite `X-Real-IP` with the connecting client address. Cloudflare Tunnel's `CF-Connecting-IP` header is also supported. Forwarded client headers are accepted only from a loopback peer; do not share that loopback network namespace with untrusted workloads.
 
 ## Admin Authentication
 

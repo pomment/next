@@ -1,4 +1,3 @@
-import { isIP } from 'node:net';
 import { extname, join, resolve, sep } from 'node:path';
 import { AdminAuth, PommentCore } from '../core';
 import {
@@ -9,6 +8,7 @@ import {
   RedisAdminAuthStore,
 } from '../runtime-bun';
 import { createHandler } from './routes';
+import { clientIpFromProxy } from './client-ip';
 
 const port = Number(Bun.env.PORT ?? 8080);
 const databasePath = Bun.env.POMMENT_DB ?? 'pomment.db';
@@ -140,18 +140,6 @@ function parseAdminOrigin(value: string | undefined): string | undefined {
     console.warn('Admin routes disabled: POMMENT_ADMIN_ORIGIN must be an exact origin without a path');
     return undefined;
   }
-}
-
-function clientIpFromProxy(request: Request, peer: string | null): string | null {
-  if (!peer || !isLoopback(peer)) {
-    return null;
-  }
-  const forwarded = request.headers.get('x-real-ip')?.trim();
-  return forwarded && isIP(forwarded) ? forwarded : null;
-}
-
-function isLoopback(address: string): boolean {
-  return address === '::1' || address === '127.0.0.1' || address === '::ffff:127.0.0.1';
 }
 
 async function sha256(value: string): Promise<string> {
