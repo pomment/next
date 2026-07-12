@@ -7,12 +7,14 @@ import {
   MemoryAdminAuthStore,
   RedisAdminAuthStore,
 } from '../runtime-bun';
-import { createHandler } from './routes';
 import { clientIpFromProxy } from './client-ip';
+import { parseCorsOrigins, withPublicCors } from './cors';
+import { createHandler } from './routes';
 
 const port = Number(Bun.env.PORT ?? 8080);
 const databasePath = Bun.env.POMMENT_DB ?? 'pomment.db';
 const secureAdminCookie = Bun.env.POMMENT_AUTH_INSECURE_COOKIE !== 'true';
+const corsOrigins = parseCorsOrigins(Bun.env.POMMENT_CORS_ORIGINS);
 
 const storage = new BunSqliteStorage({ filename: databasePath });
 const backupImport = new BunSqliteBackupImportService(databasePath);
@@ -22,15 +24,18 @@ const adminAuth = await createAdminAuth();
 const adminUiDirectory = resolve(import.meta.dir, '../../admin-ui/dist');
 const adminUiIndex = Bun.file(join(adminUiDirectory, 'index.html'));
 const adminUiAvailable = await adminUiIndex.exists();
-const handler = createHandler(core, {
-  adminAuth,
-  adminOrigin,
-  secureAdminCookie,
-  backupImport,
-  onAdminAuthEvent: (event, clientIp) => {
-    console.log(JSON.stringify({ scope: 'admin-auth', event, clientIp }));
-  },
-});
+const handler = withPublicCors(
+  createHandler(core, {
+    adminAuth,
+    adminOrigin,
+    secureAdminCookie,
+    backupImport,
+    onAdminAuthEvent: (event, clientIp) => {
+      console.log(JSON.stringify({ scope: 'admin-auth', event, clientIp }));
+    },
+  }),
+  corsOrigins,
+);
 
 Bun.serve({
   hostname: '127.0.0.1',

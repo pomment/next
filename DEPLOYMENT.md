@@ -54,7 +54,7 @@ sudo install -m 0600 /opt/pomment-next/deploy/pomment-next.env.example /etc/pomm
 sudoedit /etc/pomment-next.env
 ```
 
-`POMMENT_ADMIN_ORIGIN` must be the public HTTPS origin without a trailing slash. The default database location works with the service unit's managed state directory. Do not enable `POMMENT_AUTH_INSECURE_COOKIE` in production.
+`POMMENT_ADMIN_ORIGIN` must be the public HTTPS origin without a trailing slash. Set `POMMENT_CORS_ORIGINS` to the comma-separated exact origins of websites that need browser access to the public API. The default database location works with the service unit's managed state directory. Do not enable `POMMENT_AUTH_INSECURE_COOKIE` in production.
 
 If admin access is intentionally disabled, remove the admin password, origin, session-store, and Redis variables. Public routes will continue to work, while admin routes return HTTP 503.
 

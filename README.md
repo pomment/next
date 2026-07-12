@@ -38,6 +38,8 @@ For a production Bun deployment managed by systemd, see [`DEPLOYMENT.md`](DEPLOY
 
 The Bun entry listens on loopback using `PORT` or `8080`, and stores data in `POMMENT_DB` or `pomment.db`. Put nginx or Caddy in front of it and overwrite `X-Real-IP` with the connecting client address. Cloudflare Tunnel's `CF-Connecting-IP` header is also supported. Forwarded client headers are accepted only from a loopback peer; do not share that loopback network namespace with untrusted workloads.
 
+Set `POMMENT_CORS_ORIGINS` to a comma-separated list of exact HTTP origins when websites on other origins need browser access to the public API. For example, `POMMENT_CORS_ORIGINS='https://blog.example.com,https://www.example.com'`. Paths, trailing slashes, and wildcard origins are not accepted. CORS applies only to `/api/public/*`; admin routes continue to use `POMMENT_ADMIN_ORIGIN`.
+
 ## Admin Authentication
 
 Generate an Argon2id password hash interactively:
