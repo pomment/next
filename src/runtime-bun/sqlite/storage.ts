@@ -2,6 +2,7 @@ import { Database } from 'bun:sqlite';
 import type { Post } from '../../core/domain/post';
 import type { Thread } from '../../core/domain/thread';
 import type { StoragePort } from '../../core/ports/storage';
+import { ServiceUnavailableError } from '../../core/errors';
 import { schemaSql } from './schema';
 import { postFromRow, threadFromRow, type PostRow, type ThreadRow } from './rows';
 
@@ -15,6 +16,12 @@ export class BunSqliteStorage implements StoragePort {
 
   constructor(options: BunSqliteStorageOptions) {
     this.db = new Database(options.filename, { create: true });
+    const schemaVersion = this.db.query<{ user_version: number }, []>('PRAGMA user_version').get()!.user_version;
+    if (schemaVersion > 1) {
+      this.db.close();
+      throw new Error(`unsupported SQLite schema version: ${schemaVersion}`);
+    }
+    this.db.exec('PRAGMA journal_mode = WAL');
     this.db.exec(schemaSql);
   }
 
@@ -27,7 +34,7 @@ export class BunSqliteStorage implements StoragePort {
       return fn(this);
     }
 
-    this.db.exec('BEGIN');
+    this.db.exec('BEGIN IMMEDIATE');
     this.transactionDepth++;
     try {
       const result = await fn(this);
@@ -37,6 +44,9 @@ export class BunSqliteStorage implements StoragePort {
     } catch (error) {
       this.transactionDepth--;
       this.db.exec('ROLLBACK');
+      if (error instanceof Error && error.message.includes('backup import is in progress')) {
+        throw new ServiceUnavailableError('backup import is in progress');
+      }
       throw error;
     }
   }

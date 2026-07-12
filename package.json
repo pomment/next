@@ -12,6 +12,7 @@
     "admin:build": "bun run --cwd admin-ui build",
     "admin:preview": "bun run --cwd admin-ui preview",
     "auth:hash-password": "bun run src/entry-bun/hash-password.ts",
+    "backup": "bun run src/entry-bun/backup.ts",
     "test": "bun test",
     "test:admin-e2e": "bun run admin:build && bun run e2e/admin-ui.ts",
     "test:smoke": "bun run e2e/smoke.ts",

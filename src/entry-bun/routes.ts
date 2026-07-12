@@ -1,4 +1,4 @@
-import type { AdminAuth, PommentCore } from '../core';
+import type { AdminAuth, BackupImportPort, PommentCore, StartBackupImportInput } from '../core';
 import type { AdminEditPostInput, CreateAdminPostInput, CreateUserPostInput, ImportThreadInput } from '../core/domain/post';
 import type { UpdateThreadInput } from '../core/domain/thread';
 import {
@@ -8,7 +8,7 @@ import {
   TooManyRequestsError,
   UnauthorizedError,
 } from '../core/errors';
-import { readJson, readJsonLimited } from './body';
+import { readBytesLimited, readJson, readJsonLimited } from './body';
 import { matchPath } from './params';
 import { jsonError, jsonSuccess, text } from './responses';
 
@@ -31,6 +31,7 @@ export interface HandlerOptions {
   adminAuth?: AdminAuth;
   adminOrigin?: string;
   secureAdminCookie?: boolean;
+  backupImport?: BackupImportPort;
   onAdminAuthEvent?: (event: AdminAuthEvent, clientIp: string | null) => void;
 }
 
@@ -79,6 +80,41 @@ export function createHandler(
       method: 'GET',
       path: '/api/admin/health',
       handler: async () => jsonSuccess(null),
+    },
+    {
+      method: 'GET',
+      path: '/api/admin/backup/import',
+      handler: async () => jsonSuccess(await options.backupImport!.getActiveSession()),
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/backup/import',
+      handler: async request => {
+        const body = await readJsonLimited<StartBackupImportInput>(request, 64 * 1024);
+        return jsonSuccess(await options.backupImport!.start(body));
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/api/admin/backup/import/:id/batches/:sequence',
+      handler: async (request, params) => {
+        const digest = request.headers.get('x-pomment-batch-sha256') ?? '';
+        const bytes = await readBytesLimited(request, 1024 * 1024 + 1);
+        return jsonSuccess(await options.backupImport!.appendBatch(params.id, Number(params.sequence), digest, bytes));
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/backup/import/:id/complete',
+      handler: async (_request, params) => jsonSuccess(await options.backupImport!.complete(params.id)),
+    },
+    {
+      method: 'DELETE',
+      path: '/api/admin/backup/import/:id',
+      handler: async (_request, params) => {
+        await options.backupImport!.abort(params.id);
+        return jsonSuccess(null);
+      },
     },
     {
       method: 'GET',
@@ -192,6 +228,10 @@ export function createHandler(
     try {
       const url = new URL(request.url);
 
+      if (pathname.startsWith('/api/public/') && options.backupImport && await options.backupImport.isImporting()) {
+        throw new ServiceUnavailableError('backup import is in progress');
+      }
+
       for (const route of routes) {
         if (route.method !== request.method) {
           continue;
@@ -208,6 +248,15 @@ export function createHandler(
             }
             if (isUnsafeMethod(request.method) && request.headers.get('origin') !== options.adminOrigin) {
               throw new ForbiddenError('invalid origin');
+            }
+            if (route.path.startsWith('/api/admin/backup/') && !options.backupImport) {
+              throw new ServiceUnavailableError('backup import is unavailable');
+            }
+            if (!route.path.startsWith('/api/admin/backup/')
+              && !isImportSafeAdminPath(route.path)
+              && options.backupImport
+              && await options.backupImport.isImporting()) {
+              throw new ServiceUnavailableError('backup import is in progress');
             }
           }
           return withAdminHeaders(await route.handler(request, matched.params), pathname);
@@ -277,6 +326,10 @@ function clearSessionCookie(secure: boolean): string {
 
 function isUnsafeMethod(method: string): boolean {
   return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+}
+
+function isImportSafeAdminPath(path: string): boolean {
+  return path === '/api/admin/login' || path === '/api/admin/logout' || path === '/api/admin/health';
 }
 
 function withAdminHeaders(response: Response, pathname: string): Response {

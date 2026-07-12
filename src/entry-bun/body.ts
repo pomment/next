@@ -9,6 +9,15 @@ export async function readJson<T>(request: Request): Promise<T> {
 }
 
 export async function readJsonLimited<T>(request: Request, maxBytes: number): Promise<T> {
+  const bytes = await readBytesLimited(request, maxBytes);
+  try {
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as T;
+  } catch {
+    throw new ValidationError('invalid json body');
+  }
+}
+
+export async function readBytesLimited(request: Request, maxBytes: number): Promise<Uint8Array> {
   const contentLength = Number(request.headers.get('content-length'));
   if (Number.isFinite(contentLength) && contentLength > maxBytes) {
     throw new PayloadTooLargeError();
@@ -45,9 +54,5 @@ export async function readJsonLimited<T>(request: Request, maxBytes: number): Pr
     offset += chunk.byteLength;
   }
 
-  try {
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as T;
-  } catch {
-    throw new ValidationError('invalid json body');
-  }
+  return bytes;
 }

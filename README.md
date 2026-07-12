@@ -20,6 +20,7 @@ bunx playwright install chromium
 bun run test:admin-e2e
 bun run dev
 bun run auth:hash-password
+bun run backup
 ```
 
 The admin UI is the `admin-ui` package in the Bun workspace:
@@ -61,6 +62,19 @@ bun run dev
 
 Missing or invalid auth configuration fails closed with HTTP 503 for admin routes while public routes remain available. Redis failures also return 503 without clearing existing browser cookies.
 
+## Backup And Restore
+
+Backups contain all persisted thread and post fields, including private email and edit-key data. The `.jsonl.gz` file is checksummed but not encrypted; protect it as sensitive data.
+
+```sh
+bun run backup export --db pomment.db --output backup.jsonl.gz
+bun run backup verify backup.jsonl.gz
+bun run backup import --url https://comments.example.com backup.jsonl.gz
+bun run backup abort --url https://comments.example.com
+```
+
+Export reads a consistent SQLite snapshot in a single transaction and streams canonical JSONL through gzip. The output path is overwritten directly and must not be the database path. Import verifies the complete file locally before logging in, uploads authenticated resumable batches to an empty target, and verifies the restored data again before completion. Public and admin data routes return HTTP 503 while an import is incomplete; authentication, health, and backup routes remain available. Plain HTTP targets require the explicit `--insecure` flag.
+
 ## Implemented Routes
 
 - `GET /api/health`
@@ -74,6 +88,11 @@ Missing or invalid auth configuration fails closed with HTTP 503 for admin route
 - `POST /api/admin/login`
 - `POST /api/admin/logout`
 - `GET /api/admin/health`
+- `GET /api/admin/backup/import`
+- `POST /api/admin/backup/import`
+- `PUT /api/admin/backup/import/:id/batches/:sequence`
+- `POST /api/admin/backup/import/:id/complete`
+- `DELETE /api/admin/backup/import/:id`
 - `GET /api/admin/thread/list`
 - `GET /api/admin/thread/:id`
 - `POST /api/admin/thread/refresh`

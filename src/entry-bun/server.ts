@@ -3,6 +3,7 @@ import { extname, join, resolve, sep } from 'node:path';
 import { AdminAuth, PommentCore } from '../core';
 import {
   BunAdminPasswordVerifier,
+  BunSqliteBackupImportService,
   BunSqliteStorage,
   MemoryAdminAuthStore,
   RedisAdminAuthStore,
@@ -14,6 +15,7 @@ const databasePath = Bun.env.POMMENT_DB ?? 'pomment.db';
 const secureAdminCookie = Bun.env.POMMENT_AUTH_INSECURE_COOKIE !== 'true';
 
 const storage = new BunSqliteStorage({ filename: databasePath });
+const backupImport = new BunSqliteBackupImportService(databasePath);
 const core = new PommentCore({ storage });
 const adminOrigin = parseAdminOrigin(Bun.env.POMMENT_ADMIN_ORIGIN);
 const adminAuth = await createAdminAuth();
@@ -24,6 +26,7 @@ const handler = createHandler(core, {
   adminAuth,
   adminOrigin,
   secureAdminCookie,
+  backupImport,
   onAdminAuthEvent: (event, clientIp) => {
     console.log(JSON.stringify({ scope: 'admin-auth', event, clientIp }));
   },

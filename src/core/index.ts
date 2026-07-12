@@ -9,4 +9,6 @@ export * from './ports/jobs';
 export * from './ports/email';
 export * from './ports/captcha';
 export * from './ports/admin-auth';
+export * from './ports/backup-import';
 export * from './support/admin-password';
+export * from './backup/v1';
