@@ -26,7 +26,9 @@ export function ThreadsPage() {
   });
   const threads = threadsQuery.data ?? [];
   const visible = threads
-    .filter((thread) => `${thread.title} ${thread.url}`.toLowerCase().includes(search.trim().toLowerCase()))
+    .filter((thread) =>
+      `${thread.title} ${thread.slug} ${thread.url}`.toLowerCase().includes(search.trim().toLowerCase()),
+    )
     .sort((a, b) => (latestFirst ? b.latestPostAt - a.latestPostAt : a.latestPostAt - b.latestPostAt));
   const totalComments = threads.reduce((sum, thread) => sum + thread.amount, 0);
 
@@ -84,7 +86,7 @@ export function ThreadsPage() {
               value={search}
               onChange={setSearch}
               clearable
-              placeholder="搜索标题或 URL"
+              placeholder="搜索标题、Slug 或 URL"
             />
           </div>
         </div>
@@ -115,14 +117,18 @@ export function ThreadsPage() {
                       >
                         <td>
                           <strong>{thread.title || '未命名讨论'}</strong>
-                          <a
-                            href={thread.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            {thread.url}
-                          </a>
+                          {thread.url ? (
+                            <a
+                              href={thread.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {thread.url}
+                            </a>
+                          ) : (
+                            <span>{thread.slug}</span>
+                          )}
                         </td>
                         <td>
                           <Tag theme={thread.locked ? 'warning' : 'success'} variant="light">

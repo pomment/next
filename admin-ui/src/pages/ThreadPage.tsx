@@ -140,7 +140,7 @@ export function ThreadPage() {
       <PageHeader
         eyebrow={`THREAD / ${threadId}`}
         title={thread?.title || '讨论详情'}
-        detail={thread?.url || '加载讨论元数据中...'}
+        detail={thread ? `${thread.slug}${thread.url ? ` | ${thread.url}` : ''}` : '加载讨论元数据中...'}
         action={
           thread && (
             <>
@@ -150,6 +150,7 @@ export function ThreadPage() {
               <Button
                 theme="primary"
                 variant="outline"
+                disabled={!thread.url}
                 onClick={() => window.open(thread.url, '_blank', 'noopener,noreferrer')}
               >
                 <LinkIcon /> 在线查看

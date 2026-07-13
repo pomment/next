@@ -39,7 +39,7 @@ interface ThreadSummary {
 
 export async function scanBunBackup(path: string, options: BunBackupScanOptions = {}): Promise<BunBackupScanResult> {
   const hash = createHash('sha256');
-  const threadUrls = new Set<string>();
+  const threadSlugs = new Set<string>();
   const summaries = new Map<number, ThreadSummary>();
   let manifest: BackupManifestV1 | undefined;
   let trailer: BackupTrailerV1 | undefined;
@@ -66,9 +66,9 @@ export async function scanBunBackup(path: string, options: BunBackupScanOptions 
     if (record.type === 'thread') {
       if (phase !== 'threads') throw new BackupValidationError('thread records are out of order');
       if (record.data.id <= lastThreadId) throw new BackupValidationError('thread IDs must be strictly ascending');
-      if (threadUrls.has(record.data.url)) throw new BackupValidationError('duplicate thread URL');
+      if (threadSlugs.has(record.data.slug)) throw new BackupValidationError('duplicate thread slug');
       lastThreadId = record.data.id;
-      threadUrls.add(record.data.url);
+      threadSlugs.add(record.data.slug);
       summaries.set(record.data.id, {
         thread: record.data,
         postCount: 0,

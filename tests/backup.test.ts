@@ -33,9 +33,9 @@ function seedDatabase(path: string): void {
   const db = new Database(path, { create: true });
   db.exec(schemaSql);
   db.query(`
-    INSERT INTO threads (id, url, title, first_post_at, latest_post_at, amount, locked)
-    VALUES (3, 'https://example.com/a', 'A', 0, 0, 1, 0),
-           (8, 'https://example.com/b', 'B', 0, 0, 0, 1)
+    INSERT INTO threads (id, slug, url, title, first_post_at, latest_post_at, amount, locked)
+    VALUES (3, 'a', 'https://example.com/a', 'A', 0, 0, 1, 0),
+           (8, 'b', 'https://example.com/b', 'B', 0, 0, 0, 1)
   `).run();
   db.query(`
     INSERT INTO posts (
@@ -70,7 +70,7 @@ function fixtureRecords(): { manifest: BackupManifestV1; thread: string; post: s
     manifest,
     thread: serializeBackupThreadRecordV1({
       type: 'thread',
-      data: { title: 'T', firstPostAt: 2, latestPostAt: 2, amount: 1, id: 1, locked: false, url: 'u' },
+      data: { title: 'T', firstPostAt: 2, latestPostAt: 2, amount: 1, id: 1, locked: false, slug: 's', url: 'u' },
     }),
     post: serializeBackupPostRecordV1({
       type: 'post',
@@ -164,7 +164,7 @@ describe('v1 backup', () => {
     const fixture = fixtureRecords();
     const inconsistentThread = serializeBackupThreadRecordV1({
       type: 'thread',
-      data: { title: 'T', firstPostAt: 9, latestPostAt: 9, amount: 0, id: 1, locked: false, url: 'u' },
+      data: { title: 'T', firstPostAt: 9, latestPostAt: 9, amount: 0, id: 1, locked: false, slug: 's', url: 'u' },
     });
     writeArchive(backupPath, [serializeBackupManifestV1(fixture.manifest), inconsistentThread, fixture.post]);
     const result = await scanBunBackup(backupPath);

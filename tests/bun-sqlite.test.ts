@@ -24,6 +24,7 @@ describe('BunSqliteStorage', () => {
     const core = new PommentCore({ storage });
 
     await core.createUserPost({
+      slug: 'sqlite',
       url: 'https://example.com/sqlite',
       title: 'SQLite Post',
       name: 'Bob',
@@ -35,7 +36,7 @@ describe('BunSqliteStorage', () => {
 
     const reopened = new BunSqliteStorage({ filename });
     const reopenedCore = new PommentCore({ storage: reopened });
-    const result = await reopenedCore.listPublicPostsByUrl('https://example.com/sqlite');
+    const result = await reopenedCore.listPublicPostsBySlug('sqlite');
 
     expect(result.meta.title).toBe('SQLite Post');
     expect(result.meta.amount).toBe(1);
@@ -51,6 +52,7 @@ describe('BunSqliteStorage', () => {
     const core = new PommentCore({ storage });
 
     await core.createUserPost({
+      slug: 'admin',
       url: 'https://example.com/admin',
       title: 'Admin Post',
       name: 'User',
@@ -58,7 +60,7 @@ describe('BunSqliteStorage', () => {
       content: 'first',
     });
 
-    const thread = await core.getThreadMetaByUrl('https://example.com/admin');
+    const thread = await core.getThreadMetaBySlug('admin');
 
     const adminPost = await core.createAdminPost({
       threadId: thread.id,

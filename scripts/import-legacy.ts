@@ -44,7 +44,8 @@ interface IndexEntry {
 async function importThread(meta: LegacyMeta, posts: LegacyPost[], cookie: string): Promise<void> {
   const body = {
     thread: {
-      url: meta.url,
+      slug: threadSlug(meta.url),
+      url: URL.canParse(meta.url) ? meta.url : '',
       title: meta.title,
       firstPostAt: meta.firstPostAt,
       latestPostAt: meta.latestPostAt,
@@ -87,6 +88,12 @@ async function importThread(meta: LegacyMeta, posts: LegacyPost[], cookie: strin
   }
 }
 
+function threadSlug(pageUrl: string): string {
+  const slug = new URL(pageUrl, 'https://legacy.invalid').pathname.split('/').filter(Boolean).at(-1);
+  if (!slug) throw new Error(`Cannot derive thread slug from URL: ${pageUrl}`);
+  return decodeURIComponent(slug);
+}
+
 async function login(): Promise<string> {
   const password = await readPassword();
   const response = await fetch(apiUrl('admin/login'), {
@@ -94,6 +101,7 @@ async function login(): Promise<string> {
     headers: {
       'Content-Type': 'application/json',
       origin: POMMENT_API_ENDPOINT.origin,
+      'x-real-ip': '127.0.0.1',
     },
     body: JSON.stringify({ password }),
   });

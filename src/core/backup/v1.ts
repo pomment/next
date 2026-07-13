@@ -54,7 +54,7 @@ const manifestKeys = [
   'postIdHighWaterMark',
 ] as const;
 const threadRecordKeys = ['type', 'data'] as const;
-const threadKeys = ['title', 'firstPostAt', 'latestPostAt', 'amount', 'id', 'locked', 'url'] as const;
+const threadKeys = ['title', 'firstPostAt', 'latestPostAt', 'amount', 'id', 'locked', 'slug', 'url'] as const;
 const postRecordKeys = ['type', 'threadId', 'data'] as const;
 const postKeys = [
   'id',
@@ -131,6 +131,7 @@ function validateThread(value: unknown): Thread {
   safeInteger(thread.amount, 'thread.data.amount', 0);
   safeInteger(thread.id, 'thread.data.id', 1);
   booleanValue(thread.locked, 'thread.data.locked');
+  stringValue(thread.slug, 'thread.data.slug');
   stringValue(thread.url, 'thread.data.url');
   return thread as unknown as Thread;
 }
@@ -235,6 +236,7 @@ export function serializeBackupThreadRecordV1(record: BackupThreadRecordV1): str
       amount: data.amount,
       id: data.id,
       locked: data.locked,
+      slug: data.slug,
       url: data.url,
     },
   });

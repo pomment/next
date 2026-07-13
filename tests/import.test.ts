@@ -4,7 +4,7 @@ import type { ImportThreadInput, LegacyPostInput } from '../src/core/domain/post
 
 class MemoryStorage implements StoragePort {
   private threads = new Map<number, Thread>();
-  private urlToThreadId = new Map<string, number>();
+  private slugToThreadId = new Map<string, number>();
   private posts = new Map<number, Post[]>();
   private nextThreadId = 1;
   private nextPostId = 1;
@@ -17,22 +17,22 @@ class MemoryStorage implements StoragePort {
     return this.threads.get(id) ?? null;
   }
 
-  async getThreadByUrl(url: string): Promise<Thread | null> {
-    const id = this.urlToThreadId.get(url);
+  async getThreadBySlug(slug: string): Promise<Thread | null> {
+    const id = this.slugToThreadId.get(slug);
     return id ? (this.threads.get(id) ?? null) : null;
   }
 
   async createThread(thread: Thread): Promise<number> {
     const id = this.nextThreadId++;
     this.threads.set(id, { ...thread, id });
-    this.urlToThreadId.set(thread.url, id);
+    this.slugToThreadId.set(thread.slug, id);
     this.posts.set(id, []);
     return id;
   }
 
   async updateThread(thread: Thread): Promise<void> {
     this.threads.set(thread.id, thread);
-    this.urlToThreadId.set(thread.url, thread.id);
+    this.slugToThreadId.set(thread.slug, thread.id);
   }
 
   async listThreads(): Promise<Thread[]> {
@@ -69,6 +69,7 @@ class MemoryStorage implements StoragePort {
 function makeThread(): Thread {
   return {
     id: 0,
+    slug: 'test-post',
     url: 'https://example.com/test-post/',
     title: 'Test Post',
     firstPostAt: 1609459200000,
@@ -133,6 +134,7 @@ describe('importThread', () => {
 
     const storedThread = await core.getThreadMetaById(result.thread.id);
     expect(storedThread.url).toBe('https://example.com/test-post/');
+    expect(storedThread.slug).toBe('test-post');
     expect(storedThread.title).toBe('Test Post');
     expect(storedThread.firstPostAt).toBe(1609459200000);
     expect(storedThread.latestPostAt).toBe(1609545600000);
@@ -257,7 +259,7 @@ describe('importThread', () => {
 
     await expect(
       core.importThread({
-        thread: { id: 0, url: '', title: '', firstPostAt: 0, latestPostAt: 0, amount: 0, locked: false },
+        thread: { id: 0, slug: '', url: '', title: '', firstPostAt: 0, latestPostAt: 0, amount: 0, locked: false },
         posts: [],
       }),
     ).rejects.toThrow('missing required thread fields');

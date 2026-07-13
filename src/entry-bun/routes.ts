@@ -136,18 +136,18 @@ export function createHandler(
     },
     {
       method: 'POST',
-      path: '/api/public/thread/meta/byUrl',
+      path: '/api/public/thread/meta/bySlug',
       handler: async (request) => {
-        const body = await readJson<{ url: string }>(request);
-        return jsonSuccess(await core.getThreadMetaByUrl(body.url));
+        const body = await readJson<{ slug: string }>(request);
+        return jsonSuccess(await core.getThreadMetaBySlug(body.slug));
       },
     },
     {
       method: 'POST',
-      path: '/api/public/thread/meta/byUrls',
+      path: '/api/public/thread/meta/bySlugs',
       handler: async (request) => {
         const body = await readJson<string[]>(request);
-        return jsonSuccess(await core.getThreadMetaByUrls(body));
+        return jsonSuccess(await core.getThreadMetaBySlugs(body));
       },
     },
     {
@@ -157,10 +157,10 @@ export function createHandler(
     },
     {
       method: 'POST',
-      path: '/api/public/posts/byUrl',
+      path: '/api/public/posts/bySlug',
       handler: async (request) => {
-        const body = await readJson<{ url: string }>(request);
-        return jsonSuccess(await core.listPublicPostsByUrl(body.url));
+        const body = await readJson<{ slug: string }>(request);
+        return jsonSuccess(await core.listPublicPostsBySlug(body.slug));
       },
     },
     {

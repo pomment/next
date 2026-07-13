@@ -56,18 +56,26 @@ export class BunSqliteStorage implements StoragePort {
     return row ? threadFromRow(row) : null;
   }
 
-  async getThreadByUrl(url: string): Promise<Thread | null> {
-    const row = this.db.query<ThreadRow, [string]>('SELECT * FROM threads WHERE url = ?').get(url);
+  async getThreadBySlug(slug: string): Promise<Thread | null> {
+    const row = this.db.query<ThreadRow, [string]>('SELECT * FROM threads WHERE slug = ?').get(slug);
     return row ? threadFromRow(row) : null;
   }
 
   async createThread(thread: Thread): Promise<number> {
     this.db
       .query(`
-        INSERT INTO threads (url, title, first_post_at, latest_post_at, amount, locked)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO threads (slug, url, title, first_post_at, latest_post_at, amount, locked)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `)
-      .run(thread.url, thread.title, thread.firstPostAt, thread.latestPostAt, thread.amount, thread.locked ? 1 : 0);
+      .run(
+        thread.slug,
+        thread.url,
+        thread.title,
+        thread.firstPostAt,
+        thread.latestPostAt,
+        thread.amount,
+        thread.locked ? 1 : 0,
+      );
     return (this.db.query('SELECT last_insert_rowid() AS id').get() as { id: number }).id;
   }
 
@@ -75,10 +83,11 @@ export class BunSqliteStorage implements StoragePort {
     this.db
       .query(`
         UPDATE threads
-        SET url = ?, title = ?, first_post_at = ?, latest_post_at = ?, amount = ?, locked = ?
+        SET slug = ?, url = ?, title = ?, first_post_at = ?, latest_post_at = ?, amount = ?, locked = ?
         WHERE id = ?
       `)
       .run(
+        thread.slug,
         thread.url,
         thread.title,
         thread.firstPostAt,

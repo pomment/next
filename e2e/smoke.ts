@@ -93,6 +93,7 @@ async function main() {
     await scenario('POST /api/public/posts/add creates thread and post', async () => {
       const res = await handler(
         req('POST', '/api/public/posts/add', {
+          slug: 'smoke',
           url: 'https://example.com/smoke',
           title: 'Smoke Test Post',
           name: 'Alice',
@@ -116,6 +117,7 @@ async function main() {
     await scenario('POST /api/public/posts/add discovers existing thread', async () => {
       const res = await handler(
         req('POST', '/api/public/posts/add', {
+          slug: 'smoke',
           url: 'https://example.com/smoke',
           title: 'Should Not Update',
           name: 'Bob',
@@ -129,7 +131,7 @@ async function main() {
     });
 
     await scenario('get thread ID via public posts endpoint', async () => {
-      const listRes = await handler(req('POST', '/api/public/posts/byUrl', { url: 'https://example.com/smoke' }));
+      const listRes = await handler(req('POST', '/api/public/posts/bySlug', { slug: 'smoke' }));
       assert(listRes.status === 200, `expected 200, got ${listRes.status}`);
       const listJson = (await listRes.json()) as { code: number; data: any };
       assert(listJson.code === 200, `expected code 200, got ${listJson.code}`);
@@ -207,6 +209,7 @@ async function main() {
     await scenario('POST /api/public/posts/add with missing fields returns 400', async () => {
       const res = await handler(
         req('POST', '/api/public/posts/add', {
+          slug: 'bad',
           url: 'https://example.com/bad',
           // missing title, name, email, content
         }),
@@ -237,16 +240,14 @@ async function main() {
       assert(metaJson.data.latestPostAt >= metaJson.data.firstPostAt, 'latestPostAt should be >= firstPostAt');
     });
 
-    await scenario('thread meta by URL endpoints work', async () => {
-      const byUrlRes = await handler(
-        req('POST', '/api/public/thread/meta/byUrl', { url: 'https://example.com/smoke' }),
-      );
-      const byUrlJson = (await byUrlRes.json()) as { code: number; data: any };
-      assert(byUrlJson.data.id === threadId, 'byUrl should return correct thread');
+    await scenario('thread meta by slug endpoints work', async () => {
+      const bySlugRes = await handler(req('POST', '/api/public/thread/meta/bySlug', { slug: 'smoke' }));
+      const bySlugJson = (await bySlugRes.json()) as { code: number; data: any };
+      assert(bySlugJson.data.id === threadId, 'bySlug should return correct thread');
 
-      const byUrlsRes = await handler(req('POST', '/api/public/thread/meta/byUrls', ['https://example.com/smoke']));
-      const byUrlsJson = (await byUrlsRes.json()) as { code: number; data: any };
-      assert(byUrlsJson.data['https://example.com/smoke']?.id === threadId, 'byUrls should return correct thread');
+      const bySlugsRes = await handler(req('POST', '/api/public/thread/meta/bySlugs', ['smoke']));
+      const bySlugsJson = (await bySlugsRes.json()) as { code: number; data: any };
+      assert(bySlugsJson.data.smoke?.id === threadId, 'bySlugs should return correct thread');
     });
 
     await scenario('POST /robots.txt returns plain text', async () => {

@@ -10,7 +10,7 @@ import {
 
 class MemoryStorage implements StoragePort {
   private threads = new Map<number, Thread>();
-  private urlToThreadId = new Map<string, number>();
+  private slugToThreadId = new Map<string, number>();
   private posts = new Map<number, Post[]>();
   private nextThreadId = 1;
   private nextPostId = 1;
@@ -23,22 +23,22 @@ class MemoryStorage implements StoragePort {
     return this.threads.get(id) ?? null;
   }
 
-  async getThreadByUrl(url: string): Promise<Thread | null> {
-    const id = this.urlToThreadId.get(url);
+  async getThreadBySlug(slug: string): Promise<Thread | null> {
+    const id = this.slugToThreadId.get(slug);
     return id ? (this.threads.get(id) ?? null) : null;
   }
 
   async createThread(thread: Thread): Promise<number> {
     const id = this.nextThreadId++;
     this.threads.set(id, { ...thread, id });
-    this.urlToThreadId.set(thread.url, id);
+    this.slugToThreadId.set(thread.slug, id);
     this.posts.set(id, []);
     return id;
   }
 
   async updateThread(thread: Thread): Promise<void> {
     this.threads.set(thread.id, thread);
-    this.urlToThreadId.set(thread.url, thread.id);
+    this.slugToThreadId.set(thread.slug, thread.id);
   }
 
   async listThreads(): Promise<Thread[]> {
@@ -73,10 +73,11 @@ class MemoryStorage implements StoragePort {
 }
 
 describe('PommentCore', () => {
-  test('creates a thread and public comment for a new URL', async () => {
+  test('creates a thread and public comment for a new slug', async () => {
     const core = new PommentCore({ storage: new MemoryStorage() });
 
     const post = await core.createUserPost({
+      slug: 'post',
       url: 'https://example.com/post',
       title: 'Example Post',
       name: 'Alice',
@@ -91,7 +92,7 @@ describe('PommentCore', () => {
     expect(post.origContent).toBe('hello');
     expect(post.id).toBeGreaterThan(0);
 
-    const result = await core.listPublicPostsByUrl('https://example.com/post');
+    const result = await core.listPublicPostsBySlug('post');
     expect(result.meta.amount).toBe(1);
     expect(result.post).toHaveLength(1);
     expect('email' in result.post[0]).toBe(false);
@@ -108,6 +109,7 @@ describe('PommentCore', () => {
     });
 
     const post = await core.createUserPost({
+      slug: 'hidden',
       url: 'https://example.com/hidden',
       title: 'Hidden Post',
       name: 'Alice',
@@ -115,7 +117,7 @@ describe('PommentCore', () => {
       content: 'pending',
     });
 
-    const hiddenResult = await core.listPublicPostsByUrl('https://example.com/hidden');
+    const hiddenResult = await core.listPublicPostsBySlug('hidden');
     expect(hiddenResult.meta.amount).toBe(0);
     expect(hiddenResult.post).toHaveLength(0);
 
@@ -133,7 +135,7 @@ describe('PommentCore', () => {
     });
     expect(edited.hidden).toBe(false);
 
-    const visibleResult = await core.listPublicPostsByUrl('https://example.com/hidden');
+    const visibleResult = await core.listPublicPostsBySlug('hidden');
     expect(visibleResult.meta.amount).toBe(1);
     expect(visibleResult.post).toHaveLength(1);
   });
@@ -142,16 +144,18 @@ describe('PommentCore', () => {
     const storage = new MemoryStorage();
     const core = new PommentCore({ storage });
     await core.createUserPost({
+      slug: 'original',
       url: 'https://example.com/original',
       title: 'Original',
       name: 'Alice',
       email: 'alice@example.com',
       content: 'hello',
     });
-    const original = await core.getThreadMetaByUrl('https://example.com/original');
+    const original = await core.getThreadMetaBySlug('original');
     const input: UpdateThreadInput & Partial<Thread> = {
       id: original.id,
       title: 'Updated',
+      slug: 'updated',
       url: 'https://example.com/updated',
       locked: true,
       amount: 999,
@@ -164,6 +168,7 @@ describe('PommentCore', () => {
     expect(updated).toEqual({
       ...original,
       title: 'Updated',
+      slug: 'updated',
       url: 'https://example.com/updated',
       locked: true,
     });
@@ -176,6 +181,7 @@ describe('PommentCore', () => {
     );
     expect(
       core.createUserPost({
+        slug: updated.slug,
         url: updated.url,
         title: updated.title,
         name: 'Blocked',
@@ -185,15 +191,14 @@ describe('PommentCore', () => {
     ).rejects.toThrow('thread is locked');
 
     await core.createUserPost({
+      slug: 'conflict',
       url: 'https://example.com/conflict',
       title: 'Conflict',
       name: 'Alice',
       email: 'alice@example.com',
       content: 'hello',
     });
-    expect(core.updateThreadMeta({ ...input, url: 'https://example.com/conflict' })).rejects.toThrow(
-      'thread URL already exists',
-    );
+    expect(core.updateThreadMeta({ ...input, slug: 'conflict' })).rejects.toThrow('thread slug already exists');
     expect(core.updateThreadMeta({ ...input, locked: undefined as unknown as boolean })).rejects.toThrow(
       'invalid thread fields',
     );
@@ -203,6 +208,7 @@ describe('PommentCore', () => {
     const storage = new MemoryStorage();
     const core = new PommentCore({ storage, config: { avatarHash: 'sha256' } });
     const original = await core.createUserPost({
+      slug: 'edit',
       url: 'https://example.com/edit',
       title: 'Edit',
       name: 'Alice',
@@ -210,7 +216,7 @@ describe('PommentCore', () => {
       website: 'https://alice.example',
       content: 'original',
     });
-    const thread = await core.getThreadMetaByUrl('https://example.com/edit');
+    const thread = await core.getThreadMetaBySlug('edit');
     const input: EditPostInput & Partial<Post> = {
       threadId: thread.id,
       id: original.id,

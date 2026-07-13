@@ -109,9 +109,9 @@
         },
         {
           "v": "17",
-          "name": "Get thread meta by URL",
+          "name": "Get thread meta by slug",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/api/public/thread/meta/byUrl",
+          "endpoint": "<<baseUrl>>/api/public/thread/meta/bySlug",
           "params": [],
           "headers": [
             {
@@ -123,7 +123,7 @@
           ],
           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"url\": \"https://example.com/hello-world\"\n}"
+            "body": "{\n  \"slug\": \"hello-world\"\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -137,9 +137,9 @@
         },
         {
           "v": "17",
-          "name": "Get thread meta by URLs",
+          "name": "Get thread meta by slugs",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/api/public/thread/meta/byUrls",
+          "endpoint": "<<baseUrl>>/api/public/thread/meta/bySlugs",
           "params": [],
           "headers": [
             {
@@ -151,7 +151,7 @@
           ],
           "body": {
             "contentType": "application/json",
-            "body": "[\n  \"https://example.com/hello-world\",\n  \"https://example.com/another-page\"\n]"
+            "body": "[\n  \"hello-world\",\n  \"another-page\"\n]"
           },
           "auth": {
             "authType": "inherit",
@@ -202,9 +202,9 @@
         },
         {
           "v": "17",
-          "name": "List public posts by URL",
+          "name": "List public posts by slug",
           "method": "POST",
-          "endpoint": "<<baseUrl>>/api/public/posts/byUrl",
+          "endpoint": "<<baseUrl>>/api/public/posts/bySlug",
           "params": [],
           "headers": [
             {
@@ -216,7 +216,7 @@
           ],
           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"url\": \"https://example.com/hello-world\"\n}"
+            "body": "{\n  \"slug\": \"hello-world\"\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -244,7 +244,7 @@
           ],
           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"url\": \"https://example.com/hello-world\",\n  \"title\": \"Hello World\",\n  \"parent\": 0,\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"website\": \"https://alice.example.com\",\n  \"content\": \"This is a test comment.\",\n  \"receiveEmail\": false\n}"
+            "body": "{\n  \"slug\": \"hello-world\",\n  \"url\": \"https://example.com/hello-world\",\n  \"title\": \"Hello World\",\n  \"parent\": 0,\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"website\": \"https://alice.example.com\",\n  \"content\": \"This is a test comment.\",\n  \"receiveEmail\": false\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -372,7 +372,7 @@
           ],
           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"thread\": {\n    \"url\": \"https://example.com/hello-world\",\n    \"title\": \"Hello World\",\n    \"firstPostAt\": 1609459200000,\n    \"latestPostAt\": 1609545600000,\n    \"amount\": 2,\n    \"locked\": false\n  },\n  \"posts\": [\n    {\n      \"name\": \"Alice\",\n      \"email\": \"alice@example.com\",\n      \"emailHashed\": \"c160f8cc69a4f0bf2b0362752353d060\",\n      \"content\": \"First comment\",\n      \"createdAt\": 1609459200000,\n      \"updatedAt\": 1609459200000\n    },\n    {\n      \"name\": \"Bob\",\n      \"email\": \"bob@example.com\",\n      \"emailHashed\": \"f5d1278e8109edd94e1e4197e04873b9\",\n      \"parent\": 1,\n      \"content\": \"Reply to Alice\",\n      \"createdAt\": 1609545600000,\n      \"updatedAt\": 1609545600000\n    }\n  ]\n}"
+            "body": "{\n  \"thread\": {\n    \"slug\": \"hello-world\",\n    \"url\": \"https://example.com/hello-world\",\n    \"title\": \"Hello World\",\n    \"firstPostAt\": 1609459200000,\n    \"latestPostAt\": 1609545600000,\n    \"amount\": 2,\n    \"locked\": false\n  },\n  \"posts\": [\n    {\n      \"name\": \"Alice\",\n      \"email\": \"alice@example.com\",\n      \"emailHashed\": \"c160f8cc69a4f0bf2b0362752353d060\",\n      \"content\": \"First comment\",\n      \"createdAt\": 1609459200000,\n      \"updatedAt\": 1609459200000\n    },\n    {\n      \"name\": \"Bob\",\n      \"email\": \"bob@example.com\",\n      \"emailHashed\": \"f5d1278e8109edd94e1e4197e04873b9\",\n      \"parent\": 1,\n      \"content\": \"Reply to Alice\",\n      \"createdAt\": 1609545600000,\n      \"updatedAt\": 1609545600000\n    }\n  ]\n}"
           },
           "auth": {
             "authType": "inherit",
@@ -400,7 +400,7 @@
           ],
           "body": {
             "contentType": "application/json",
-            "body": "{\n  \"id\": <<threadId>>,\n  \"title\": \"Updated Title\",\n  \"url\": \"https://example.com/hello-world\",\n  \"locked\": false\n}"
+            "body": "{\n  \"id\": <<threadId>>,\n  \"title\": \"Updated Title\",\n  \"slug\": \"hello-world\",\n  \"url\": \"https://example.com/hello-world\",\n  \"locked\": false\n}"
           },
           "auth": {
             "authType": "inherit",

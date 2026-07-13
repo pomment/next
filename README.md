@@ -86,10 +86,10 @@ Export reads a consistent SQLite snapshot in a single transaction and streams ca
 - `GET /api/health`
 - `GET /robots.txt`
 - `GET /api/public/thread/meta/:id`
-- `POST /api/public/thread/meta/byUrl`
-- `POST /api/public/thread/meta/byUrls`
+- `POST /api/public/thread/meta/bySlug`
+- `POST /api/public/thread/meta/bySlugs`
 - `GET /api/public/posts/:id`
-- `POST /api/public/posts/byUrl`
+- `POST /api/public/posts/bySlug`
 - `POST /api/public/posts/add`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`

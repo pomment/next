@@ -1,5 +1,6 @@
 export interface Thread {
   id: number;
+  slug: string;
   url: string;
   title: string;
   firstPostAt: number;

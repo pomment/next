@@ -201,7 +201,7 @@ export class BunSqliteBackupImportService implements BackupImportPort {
       let lastPostId = row.last_post_id;
       let threadCount = row.thread_count;
       let postCount = row.post_count;
-      const batchUrls = new Set<string>();
+      const batchSlugs = new Set<string>();
 
       for (const line of lines) {
         if (Buffer.byteLength(line, 'utf8') > BACKUP_MAX_RECORD_BYTES)
@@ -216,12 +216,12 @@ export class BunSqliteBackupImportService implements BackupImportPort {
           if (phase !== 'threads' || record.data.id <= lastThreadId)
             throw new ValidationError('thread records are out of order');
           if (
-            batchUrls.has(record.data.url) ||
-            this.db.query('SELECT 1 FROM threads WHERE url = ?').get(record.data.url)
+            batchSlugs.has(record.data.slug) ||
+            this.db.query('SELECT 1 FROM threads WHERE slug = ?').get(record.data.slug)
           ) {
-            throw new ValidationError('duplicate thread URL');
+            throw new ValidationError('duplicate thread slug');
           }
-          batchUrls.add(record.data.url);
+          batchSlugs.add(record.data.slug);
           insertThread(this.db, record.data);
           lastThreadId = record.data.id;
           threadCount++;
@@ -435,10 +435,11 @@ function normalizeSqliteError(error: unknown): unknown {
 
 function insertThread(db: Database, thread: import('../../core').Thread): void {
   db.query(`
-    INSERT INTO threads (id, url, title, first_post_at, latest_post_at, amount, locked)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO threads (id, slug, url, title, first_post_at, latest_post_at, amount, locked)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     thread.id,
+    thread.slug,
     thread.url,
     thread.title,
     thread.firstPostAt,

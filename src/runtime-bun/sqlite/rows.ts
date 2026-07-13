@@ -3,6 +3,7 @@ import type { Thread } from '../../core/domain/thread';
 
 export interface ThreadRow {
   id: number;
+  slug: string;
   url: string;
   title: string;
   first_post_at: number;
@@ -34,6 +35,7 @@ export interface PostRow {
 export function threadFromRow(row: ThreadRow): Thread {
   return {
     id: row.id,
+    slug: row.slug,
     url: row.url,
     title: row.title,
     firstPostAt: row.first_post_at,

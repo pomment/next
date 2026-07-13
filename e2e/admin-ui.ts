@@ -34,6 +34,7 @@ try {
   const first = await api<{ id: number }>('/api/public/posts/add', {
     method: 'POST',
     body: JSON.stringify({
+      slug: 'e2e',
       url: 'https://example.com/e2e',
       title: 'E2E Thread',
       name: 'Alice',
@@ -44,6 +45,7 @@ try {
   await api('/api/public/posts/add', {
     method: 'POST',
     body: JSON.stringify({
+      slug: 'e2e',
       url: 'https://example.com/e2e',
       title: 'E2E Thread',
       parent: first.id,
@@ -52,9 +54,9 @@ try {
       content: 'Child comment',
     }),
   });
-  const thread = await api<{ id: number }>('/api/public/thread/meta/byUrl', {
+  const thread = await api<{ id: number }>('/api/public/thread/meta/bySlug', {
     method: 'POST',
-    body: JSON.stringify({ url: 'https://example.com/e2e' }),
+    body: JSON.stringify({ slug: 'e2e' }),
   });
 
   browser = await chromium.launch();
@@ -133,6 +135,7 @@ try {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
+      slug: 'e2e',
       url: 'https://example.com/e2e',
       title: 'Ignored',
       name: 'Blocked',

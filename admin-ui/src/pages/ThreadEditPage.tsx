@@ -56,7 +56,9 @@ function ThreadEditor({ thread: initialThread }: { thread: Thread }) {
 
   function submit() {
     if (!thread.title.trim()) return void MessagePlugin.warning('标题不能为空');
-    if (!validHttpUrl(thread.url)) return void MessagePlugin.warning('URL 必须以 http:// 或 https:// 开头');
+    if (!thread.slug.trim()) return void MessagePlugin.warning('Slug 不能为空');
+    if (thread.url && !validHttpUrl(thread.url))
+      return void MessagePlugin.warning('URL 必须为空或以 http://、https:// 开头');
     save.mutate();
   }
 
@@ -81,6 +83,9 @@ function ThreadEditor({ thread: initialThread }: { thread: Thread }) {
               onChange={(url) => setThread({ ...thread, url })}
               placeholder="https://example.com/article"
             />
+          </Form.FormItem>
+          <Form.FormItem label="Slug">
+            <Input value={thread.slug} onChange={(slug) => setThread({ ...thread, slug })} placeholder="article-slug" />
           </Form.FormItem>
           <div className="locked-row">
             <span>

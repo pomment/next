@@ -38,15 +38,15 @@ export class PommentCore {
     return thread ?? this.emptyThread({ id });
   }
 
-  async getThreadMetaByUrl(url: string): Promise<Thread> {
-    const thread = await this.deps.storage.getThreadByUrl(url);
-    return thread ?? this.emptyThread({ url });
+  async getThreadMetaBySlug(slug: string): Promise<Thread> {
+    const thread = await this.deps.storage.getThreadBySlug(slug);
+    return thread ?? this.emptyThread({ slug });
   }
 
-  async getThreadMetaByUrls(urls: string[]): Promise<Record<string, Thread>> {
+  async getThreadMetaBySlugs(slugs: string[]): Promise<Record<string, Thread>> {
     const out: Record<string, Thread> = {};
-    for (const url of urls) {
-      out[url] = await this.getThreadMetaByUrl(url);
+    for (const slug of slugs) {
+      out[slug] = await this.getThreadMetaBySlug(slug);
     }
     return out;
   }
@@ -67,11 +67,11 @@ export class PommentCore {
     };
   }
 
-  async listPublicPostsByUrl(url: string): Promise<PostListResult> {
-    const thread = await this.deps.storage.getThreadByUrl(url);
+  async listPublicPostsBySlug(slug: string): Promise<PostListResult> {
+    const thread = await this.deps.storage.getThreadBySlug(slug);
     if (!thread) {
       return {
-        meta: this.emptyThread({ url }),
+        meta: this.emptyThread({ slug }),
         post: [],
       };
     }
@@ -96,10 +96,11 @@ export class PommentCore {
 
     let createdThread: Thread | null = null;
     const post = await this.deps.storage.transaction(async (storage) => {
-      let thread = await storage.getThreadByUrl(input.url);
+      let thread = await storage.getThreadBySlug(input.slug);
       if (!thread) {
         thread = {
           id: 0,
+          slug: input.slug,
           url: input.url,
           title: input.title,
           firstPostAt: 0,
@@ -226,7 +227,7 @@ export class PommentCore {
 
   async updateThreadMeta(input: UpdateThreadInput): Promise<Thread> {
     this.validateUpdateThreadInput(input);
-    if (!isHttpUrl(input.url)) {
+    if (input.url && !isHttpUrl(input.url)) {
       throw new ValidationError('thread URL must be a valid http or https URL');
     }
 
@@ -235,14 +236,15 @@ export class PommentCore {
       if (!thread) {
         throw new NotFoundError('thread not found');
       }
-      const conflictingThread = await storage.getThreadByUrl(input.url);
+      const conflictingThread = await storage.getThreadBySlug(input.slug);
       if (conflictingThread && conflictingThread.id !== input.id) {
-        throw new ConflictError('thread URL already exists');
+        throw new ConflictError('thread slug already exists');
       }
 
       const updated = {
         ...thread,
         title: input.title,
+        slug: input.slug,
         url: input.url,
         locked: input.locked,
       };
@@ -275,7 +277,7 @@ export class PommentCore {
     this.validateImportInput(input);
 
     const { threadId, postCount } = await this.deps.storage.transaction(async (storage) => {
-      const existing = await storage.getThreadByUrl(input.thread.url);
+      const existing = await storage.getThreadBySlug(input.thread.slug);
       let threadId: number;
       if (existing) {
         threadId = existing.id;
@@ -352,7 +354,7 @@ export class PommentCore {
   }
 
   private validateImportInput(input: ImportThreadInput): void {
-    if (!input.thread.url || !input.thread.title) {
+    if (!input.thread.slug || !input.thread.title) {
       throw new ValidationError('missing required thread fields');
     }
     if (!Array.isArray(input.posts)) {
@@ -365,10 +367,11 @@ export class PommentCore {
     }
   }
 
-  private emptyThread(seed: Partial<Pick<Thread, 'id' | 'url'>>): Thread {
+  private emptyThread(seed: Partial<Pick<Thread, 'id' | 'slug'>>): Thread {
     return {
       id: seed.id ?? 0,
-      url: seed.url ?? '',
+      slug: seed.slug ?? '',
+      url: '',
       title: '',
       firstPostAt: 0,
       latestPostAt: 0,
@@ -378,8 +381,11 @@ export class PommentCore {
   }
 
   private validateUserPostInput(input: CreateUserPostInput): void {
-    if (!input.url || !input.title || !input.name || !input.email || !input.content) {
+    if (!input.slug || !input.url || !input.title || !input.name || !input.email || !input.content) {
       throw new ValidationError('missing required comment fields');
+    }
+    if (!isHttpUrl(input.url)) {
+      throw new ValidationError('thread URL must be a valid http or https URL');
     }
   }
 
@@ -414,6 +420,8 @@ export class PommentCore {
       input.id <= 0 ||
       typeof input.title !== 'string' ||
       !input.title.trim() ||
+      typeof input.slug !== 'string' ||
+      !input.slug.trim() ||
       typeof input.url !== 'string' ||
       typeof input.locked !== 'boolean'
     ) {

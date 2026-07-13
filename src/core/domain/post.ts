@@ -34,6 +34,7 @@ export interface PublicPost {
 }
 
 export interface CreateUserPostInput {
+  slug: string;
   url: string;
   title: string;
   parent?: number;

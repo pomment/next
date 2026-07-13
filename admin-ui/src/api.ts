@@ -44,7 +44,13 @@ export const api = {
   updateThread: (thread: Thread) =>
     request<Thread>('/api/admin/thread/meta', {
       method: 'PUT',
-      body: JSON.stringify({ id: thread.id, title: thread.title, url: thread.url, locked: thread.locked }),
+      body: JSON.stringify({
+        id: thread.id,
+        title: thread.title,
+        slug: thread.slug,
+        url: thread.url,
+        locked: thread.locked,
+      }),
     }),
   listPosts: (threadId: number) => request<Post[]>(`/api/admin/thread/${threadId}`),
   getPost: (threadId: number, postId: number) => request<Post>(`/api/admin/posts/${threadId}/${postId}`),

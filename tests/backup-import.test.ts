@@ -43,8 +43,8 @@ function seedSource(path: string): void {
   const db = new Database(path, { create: true });
   db.exec(schemaSql);
   db.query(`
-    INSERT INTO threads (id, url, title, first_post_at, latest_post_at, amount, locked)
-    VALUES (7, 'https://example.com/thread', 'Thread', 10, 10, 1, 1)
+    INSERT INTO threads (id, slug, url, title, first_post_at, latest_post_at, amount, locked)
+    VALUES (7, 'thread', 'https://example.com/thread', 'Thread', 10, 10, 1, 1)
   `).run();
   db.query(`
     INSERT INTO posts (
@@ -118,6 +118,7 @@ describe('backup import', () => {
       target.storage.transaction((storage) =>
         storage.createThread({
           id: 0,
+          slug: 'race',
           url: 'https://example.com/race',
           title: 'Race',
           firstPostAt: 0,
@@ -161,8 +162,9 @@ describe('backup import', () => {
     expect(await target.backupImport.isImporting()).toBe(false);
 
     const db = new Database(paths.target, { readonly: true });
-    expect(db.query('SELECT id, url, locked FROM threads').get()).toEqual({
+    expect(db.query('SELECT id, slug, url, locked FROM threads').get()).toEqual({
       id: 7,
+      slug: 'thread',
       url: 'https://example.com/thread',
       locked: 1,
     });
@@ -183,6 +185,7 @@ describe('backup import', () => {
     await target.storage.transaction((storage) =>
       storage.createThread({
         id: 0,
+        slug: 'after-restore',
         url: 'https://example.com/after-restore',
         title: 'After restore',
         firstPostAt: 0,

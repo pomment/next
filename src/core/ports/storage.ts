@@ -5,7 +5,7 @@ export interface StoragePort {
   transaction<T>(fn: (storage: StoragePort) => Promise<T>): Promise<T>;
 
   getThreadById(id: number): Promise<Thread | null>;
-  getThreadByUrl(url: string): Promise<Thread | null>;
+  getThreadBySlug(slug: string): Promise<Thread | null>;
   createThread(thread: Thread): Promise<number>;
   updateThread(thread: Thread): Promise<void>;
   listThreads(): Promise<Thread[]>;
