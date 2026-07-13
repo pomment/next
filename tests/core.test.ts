@@ -1,12 +1,19 @@
 import { describe, expect, test } from 'bun:test';
 import {
   PommentCore,
+  type CaptchaPort,
   type EditPostInput,
   type Post,
   type StoragePort,
   type Thread,
   type UpdateThreadInput,
 } from '../src/core';
+
+class FakeCaptchaPort implements CaptchaPort {
+  async verify(response: string): Promise<{ passed: boolean; score?: number }> {
+    return { passed: response === 'valid', score: response === 'valid' ? 0.9 : 0.1 };
+  }
+}
 
 class MemoryStorage implements StoragePort {
   private threads = new Map<number, Thread>();
@@ -256,4 +263,96 @@ describe('PommentCore', () => {
       'invalid admin comment fields',
     );
   });
+
+  test('captcha-enabled post starts hidden and becomes visible after async verification', async () => {
+    const storage = new MemoryStorage();
+    const captcha = new FakeCaptchaPort();
+    const core = new PommentCore({
+      storage,
+      captcha,
+      config: { captcha: { enabled: true, minimumScore: 0.5 } },
+    });
+
+    const post = await core.createUserPost({
+      slug: 'captcha-post',
+      url: 'https://example.com/captcha',
+      title: 'Captcha Post',
+      name: 'Bob',
+      email: 'bob@example.com',
+      content: 'hello captcha',
+      challengeResponse: 'valid',
+    });
+
+    const thread = await core.getThreadMetaBySlug('captcha-post');
+
+    expect(post.hidden).toBe(true);
+    expect(post.rating).toBe(0);
+
+    await waitFor(() => storage.listPosts(thread.id).then((posts) => posts.some((p) => !p.hidden)));
+
+    const stored = await storage.getPost(thread.id, post.id);
+    expect(stored?.hidden).toBe(false);
+    expect(stored?.rating).toBe(0.9);
+  });
+
+  test('captcha-enabled post with failed verification still becomes visible', async () => {
+    const storage = new MemoryStorage();
+    const captcha = new FakeCaptchaPort();
+    const core = new PommentCore({
+      storage,
+      captcha,
+      config: { captcha: { enabled: true, minimumScore: 0.5 } },
+    });
+
+    const post = await core.createUserPost({
+      slug: 'captcha-fail',
+      url: 'https://example.com/fail',
+      title: 'Fail Post',
+      name: 'Carol',
+      email: 'carol@example.com',
+      content: 'bad captcha',
+      challengeResponse: 'invalid',
+    });
+
+    const thread = await core.getThreadMetaBySlug('captcha-fail');
+
+    expect(post.hidden).toBe(true);
+
+    await waitFor(() => storage.listPosts(thread.id).then((posts) => posts.some((p) => !p.hidden)));
+
+    const stored = await storage.getPost(thread.id, post.id);
+    expect(stored?.hidden).toBe(false);
+    expect(stored?.rating).toBe(0.1);
+  });
+
+  test('captcha-disabled post is not hidden regardless of captcha port', async () => {
+    const storage = new MemoryStorage();
+    const captcha = new FakeCaptchaPort();
+    const core = new PommentCore({
+      storage,
+      captcha,
+      config: { captcha: { enabled: false, minimumScore: 0.5 } },
+    });
+
+    const post = await core.createUserPost({
+      slug: 'no-captcha',
+      url: 'https://example.com/nocaptcha',
+      title: 'No Captcha',
+      name: 'Dave',
+      email: 'dave@example.com',
+      content: 'no captcha needed',
+      challengeResponse: 'whatever',
+    });
+
+    expect(post.hidden).toBe(false);
+  });
 });
+
+async function waitFor(condition: () => Promise<boolean>, timeoutMs = 2000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (await condition()) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error('waitFor timed out');
+}

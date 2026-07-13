@@ -12,6 +12,7 @@ import type {
 import type { Thread, UpdateThreadInput } from './domain/thread';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from './errors';
 import { InlineJobPort, type JobPort } from './ports/jobs';
+import type { CaptchaPort } from './ports/captcha';
 import type { StoragePort } from './ports/storage';
 import { generateEditKey } from './support/edit-key';
 import { hashEmail } from './support/email-hash';
@@ -21,6 +22,7 @@ import { isHttpUrl, sanitizeWebsite } from './support/website';
 export interface PommentCoreDeps {
   storage: StoragePort;
   jobs?: JobPort;
+  captcha?: CaptchaPort;
   config?: Partial<PommentCoreConfig>;
 }
 
@@ -94,6 +96,8 @@ export class PommentCore {
   async createUserPost(input: CreateUserPostInput): Promise<Post> {
     this.validateUserPostInput(input);
 
+    const captchaEnabled = this.config.captcha.enabled && this.deps.captcha !== undefined;
+
     let createdThread: Thread | null = null;
     const post = await this.deps.storage.transaction(async (storage) => {
       let thread = await storage.getThreadBySlug(input.slug);
@@ -122,7 +126,7 @@ export class PommentCore {
         website: sanitizeWebsite(input.website),
         parent: input.parent ?? 0,
         content: input.content,
-        hidden: this.config.moderationInitiallyHidden,
+        hidden: this.config.moderationInitiallyHidden || captchaEnabled,
         byAdmin: false,
         receiveEmail: input.receiveEmail ?? false,
         editKey: generateEditKey(),
@@ -138,12 +142,39 @@ export class PommentCore {
       return post;
     });
 
+    if (captchaEnabled) {
+      void this.verifyCaptchaAsync(post, createdThread!.id, input.challengeResponse);
+    }
+
     await this.jobs.dispatch('post.created', {
       post,
       thread: createdThread,
       challengeResponse: input.challengeResponse,
     });
     return post;
+  }
+
+  private async verifyCaptchaAsync(post: Post, threadId: number, challengeResponse?: string): Promise<void> {
+    const captcha = this.deps.captcha;
+    if (!captcha) {
+      return;
+    }
+    const result = await captcha.verify(challengeResponse ?? '');
+    console.log(
+      JSON.stringify({
+        scope: 'captcha',
+        postId: post.id,
+        threadId,
+        passed: result.passed,
+        score: result.score ?? null,
+        hasToken: challengeResponse !== undefined && challengeResponse !== '',
+      }),
+    );
+    await this.deps.storage.updatePost(threadId, {
+      ...post,
+      hidden: false,
+      rating: result.score ?? 0,
+    });
   }
 
   async createAdminPost(input: CreateAdminPostInput): Promise<Post> {

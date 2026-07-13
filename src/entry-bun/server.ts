@@ -5,6 +5,7 @@ import {
   BunSqliteBackupImportService,
   BunSqliteStorage,
   MemoryAdminAuthStore,
+  RecaptchaCaptchaPort,
   RedisAdminAuthStore,
 } from '../runtime-bun';
 import { clientIpFromProxy } from './client-ip';
@@ -16,9 +17,37 @@ const databasePath = Bun.env.POMMENT_DB ?? 'pomment.db';
 const secureAdminCookie = Bun.env.POMMENT_AUTH_INSECURE_COOKIE !== 'true';
 const corsOrigins = parseCorsOrigins(Bun.env.POMMENT_CORS_ORIGINS);
 
+const recaptchaSecret = Bun.env.POMMENT_RECAPTCHA_SECRET_KEY;
+const recaptchaEnabled = Bun.env.POMMENT_RECAPTCHA_ENABLED === 'true' && recaptchaSecret !== undefined;
+const recaptchaMinimumScore = Number(Bun.env.POMMENT_RECAPTCHA_MINIMUM_SCORE ?? '0.5');
+const recaptchaApiUrl = Bun.env.POMMENT_RECAPTCHA_API_URL;
+const recaptchaTimeoutMs = Bun.env.POMMENT_RECAPTCHA_TIMEOUT_MS !== undefined
+  ? Number(Bun.env.POMMENT_RECAPTCHA_TIMEOUT_MS)
+  : undefined;
+
+if (Bun.env.POMMENT_RECAPTCHA_ENABLED === 'true' && !recaptchaSecret) {
+  console.warn('reCAPTCHA enabled but POMMENT_RECAPTCHA_SECRET_KEY is not set');
+}
+
 const storage = new BunSqliteStorage({ filename: databasePath });
 const backupImport = new BunSqliteBackupImportService(databasePath);
-const core = new PommentCore({ storage });
+const core = new PommentCore({
+  storage,
+  captcha: recaptchaEnabled && recaptchaSecret
+    ? new RecaptchaCaptchaPort({
+        secretKey: recaptchaSecret,
+        minimumScore: Number.isFinite(recaptchaMinimumScore) ? recaptchaMinimumScore : 0.5,
+        apiUrl: recaptchaApiUrl,
+        timeoutMs: recaptchaTimeoutMs,
+      })
+    : undefined,
+  config: {
+    captcha: {
+      enabled: recaptchaEnabled,
+      minimumScore: Number.isFinite(recaptchaMinimumScore) ? recaptchaMinimumScore : 0.5,
+    },
+  },
+});
 const adminOrigin = parseAdminOrigin(Bun.env.POMMENT_ADMIN_ORIGIN);
 const adminAuth = await createAdminAuth();
 const adminUiDirectory = resolve(import.meta.dir, '../../admin-ui/dist');
